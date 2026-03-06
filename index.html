@@ -822,6 +822,8 @@
 
                 const nominalRate = getNominalRate(trip);
                 const actualExpenses = (trip.expenses || []).filter(e => e.id !== '_NOMINAL_RATE_');
+                
+                const localTotal = actualExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
                 const total = actualExpenses.reduce((sum, e) => {
                     const isNominal = e.useNominal !== false;
                     const rate = isNominal ? nominalRate : parseFloat(e.rate || 1);
@@ -841,7 +843,8 @@
                         </div>
                         <div class="text-left sm:text-right">
                             <span class="text-emerald-800 dark:text-emerald-400 font-medium block mb-1">Total Trip Expenses</span>
-                            <span class="text-2xl font-bold text-emerald-700 dark:text-emerald-500">SGD$${total.toFixed(2)}</span>
+                            <span class="text-2xl font-bold text-emerald-700 dark:text-emerald-500 block">SGD$${total.toFixed(2)}</span>
+                            <span class="text-sm font-medium text-emerald-600 dark:text-emerald-400/80">${localTotal.toFixed(2)} Local</span>
                         </div>
                     </div>
                 `;
