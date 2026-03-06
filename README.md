@@ -27,8 +27,8 @@ Important: Make sure it doesn't save as index.html.txt. It must end in .html.
 
 Save it somewhere easy to find, like your Desktop.
 
-**Step 2: Create a Free GitHub Account
-**
+**Step 2: Create a Free GitHub Account**
+
 If you already have a GitHub account, you can skip this step!
 
 Go to https://github.com
@@ -37,8 +37,8 @@ Click the Sign up button in the top right corner.
 
 Follow the prompts to enter your email, create a password, and pick a username.
 
-**Step 3: Create a "Repository" (A Project Folder)
-**
+**Step 3: Create a "Repository" (A Project Folder)**
+
 A "repository" is just GitHub's fancy word for a folder that holds your project.
 
 Once you are logged into GitHub, look at the very top right of the screen.
@@ -53,8 +53,8 @@ Keep it set to Public (this is required for the free website hosting).
 
 Scroll all the way down to the bottom and click the green Create repository button.
 
-**Step 4: Upload your Website File
-**
+**Step 4: Upload your Website File**
+
 Now we put your index.html file into your new project folder.
 
 On the screen that appears after creating your repository, look for the small blue text that says uploading an existing file (it's near the middle of the screen) and click it.
@@ -67,8 +67,8 @@ Wait a few seconds for it to load.
 
 Scroll down and click the green Commit changes button. (Note: "Commit" is just computer-speak for "Save").
 
-**Step 5: Turn on the Magic (Enable GitHub Pages)
-**
+**Step 5: Turn on the Magic (Enable GitHub Pages)**
+
 Your file is safely stored! Now we tell GitHub to display it as a website.
 
 Look near the top of your repository page for a row of tabs (Code, Issues, Pull requests, etc.). Click the Settings tab (it has a little gear icon ⚙️).
@@ -83,8 +83,8 @@ Leave the next dropdown as / (root).
 
 Click the Save button right next to it.
 
-**Step 6: Get Your Live Link! 🎉
-**
+**Step 6: Get Your Live Link! 🎉**
+
 You are done! But you have to wait just a minute.
 
 GitHub takes about 1 to 2 minutes to build your website for the first time. Go grab a sip of water!
@@ -97,8 +97,8 @@ Click that link! It will open your fully functioning JourneyLog app in a new tab
 
 Bookmark that link! You can now visit it on your phone, tablet, or send it to your travel buddies. Because you set up the Google Sheet backend, everything you type into this website will automatically save to your Google Sheet!
 
-**Need to make an update later?
-**
+**Need to make an update later?**
+
 If you ever want to change the code (like changing the title or colors):
 
 Go back to your repository on GitHub.
