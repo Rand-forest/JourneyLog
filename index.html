@@ -483,7 +483,7 @@
             const day = String(d.getDate()).padStart(2, '0');
             const month = d.toLocaleString('en-US', { month: 'short' });
             const year = d.getFullYear();
-            return `${day}/${month}/${year}`;
+            return `${day} ${month} ${year}`;
         };
 
         const formatDateTime = (dateStr) => {
@@ -492,7 +492,7 @@
             const day = String(d.getDate()).padStart(2, '0');
             const month = d.toLocaleString('en-US', { month: 'short' });
             const year = d.getFullYear();
-            return `${day}/${month}/${year} • ` + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            return `${day} ${month} ${year} • ` + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         };
         
         const getStatusBadge = (status) => {
