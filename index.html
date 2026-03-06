@@ -6,6 +6,18 @@
     <title>Travel Itineraries</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind Dark Mode Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+        // Early theme check to prevent flash of unstyled content
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+    </script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Google Fonts -->
@@ -29,28 +41,35 @@
             width: 2px;
             background-color: #e5e7eb;
             z-index: 0;
+            transition: background-color 0.3s;
         }
+        html.dark .timeline-line::before { background-color: #374151; }
         .timeline-item:last-child .timeline-line::before { display: none; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col transition-colors duration-300">
 
     <!-- Global Loader Overlay -->
-    <div id="global-loader" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm hidden">
-        <i data-lucide="loader-2" class="w-12 h-12 text-blue-600 animate-spin mb-4"></i>
-        <p id="loader-text" class="text-lg font-medium text-gray-800">Loading...</p>
+    <div id="global-loader" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm hidden">
+        <i data-lucide="loader-2" class="w-12 h-12 text-blue-600 dark:text-blue-400 animate-spin mb-4"></i>
+        <p id="loader-text" class="text-lg font-medium text-gray-800 dark:text-gray-200">Loading...</p>
     </div>
 
     <!-- Navigation -->
-    <nav class="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-30">
+    <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-100 dark:border-gray-700 sticky top-0 z-30 transition-colors duration-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <div class="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80" onclick="goBackToDashboard()">
-                    <i data-lucide="plane" class="text-blue-600 h-6 w-6"></i>
-                    <span class="font-bold text-xl tracking-tight text-gray-900">JourneyLog</span>
+                    <i data-lucide="plane" class="text-blue-600 dark:text-blue-400 h-6 w-6"></i>
+                    <span class="font-bold text-xl tracking-tight text-gray-900 dark:text-white">JourneyLog</span>
                 </div>
-                <div class="flex items-center">
-                    <img class="h-8 w-8 rounded-full border border-gray-200" src="https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff" alt="User avatar">
+                <div class="flex items-center gap-3">
+                    <!-- Theme Toggle Button -->
+                    <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5 transition-colors">
+                        <i id="theme-toggle-dark-icon" data-lucide="moon" class="hidden w-5 h-5"></i>
+                        <i id="theme-toggle-light-icon" data-lucide="sun" class="hidden w-5 h-5"></i>
+                    </button>
+                    <img class="h-8 w-8 rounded-full border border-gray-200 dark:border-gray-600" src="https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff" alt="User avatar">
                 </div>
             </div>
         </div>
@@ -65,19 +84,19 @@
         <div id="dashboard-view" class="block">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">My Trips</h1>
-                    <p class="text-gray-500 mt-1">Manage and plan your upcoming adventures.</p>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">My Trips</h1>
+                    <p class="text-gray-500 dark:text-gray-400 mt-1">Manage and plan your upcoming adventures.</p>
                 </div>
-                <button onclick="openTripModal()" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button onclick="openTripModal()" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
                     <i data-lucide="plus" class="w-5 h-5"></i>
                     Add New Trip
                 </button>
             </div>
             <div id="trips-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
             <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center">
-                <div class="bg-blue-50 p-4 rounded-full mb-4"><i data-lucide="map" class="w-12 h-12 text-blue-500"></i></div>
-                <h3 class="text-lg font-medium text-gray-900">No trips planned yet</h3>
-                <p class="text-gray-500 mt-1 max-w-sm">Click the "Add New Trip" button to start organizing your next adventure.</p>
+                <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-full mb-4"><i data-lucide="map" class="w-12 h-12 text-blue-500 dark:text-blue-400"></i></div>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">No trips planned yet</h3>
+                <p class="text-gray-500 dark:text-gray-400 mt-1 max-w-sm">Click the "Add New Trip" button to start organizing your next adventure.</p>
             </div>
         </div>
 
@@ -86,14 +105,14 @@
         <!-- ========================================== -->
         <div id="trip-overview-view" class="hidden flex-col h-full min-h-[calc(100vh-8rem)]">
             <div class="mb-8">
-                <button onclick="goBackToDashboard()" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors mb-4 group">
+                <button onclick="goBackToDashboard()" class="inline-flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-4 group">
                     <i data-lucide="arrow-left" class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform"></i>
                     Back to all trips
                 </button>
                 <div class="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
                     <div>
-                        <h1 id="overview-destination" class="text-3xl font-bold text-gray-900">Destination</h1>
-                        <p id="overview-dates" class="text-gray-500 mt-1 flex items-center">
+                        <h1 id="overview-destination" class="text-3xl font-bold text-gray-900 dark:text-white">Destination</h1>
+                        <p id="overview-dates" class="text-gray-500 dark:text-gray-400 mt-1 flex items-center">
                             <i data-lucide="calendar" class="w-4 h-4 mr-2"></i> <span>Dates</span>
                         </p>
                     </div>
@@ -105,30 +124,30 @@
             <!-- The 3 Summary Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Flights Card -->
-                <div onclick="viewCategory('flights')" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all text-center group">
-                    <div class="w-16 h-16 mx-auto bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                <div onclick="viewCategory('flights')" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 cursor-pointer hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-blue-300 dark:hover:border-blue-500 transition-all text-center group">
+                    <div class="w-16 h-16 mx-auto bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                         <i data-lucide="plane" class="w-8 h-8"></i>
                     </div>
-                    <h2 class="text-xl font-bold text-gray-900">Flights</h2>
-                    <p id="summary-flights" class="text-gray-500 mt-2 font-medium">0 booked</p>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Flights</h2>
+                    <p id="summary-flights" class="text-gray-500 dark:text-gray-400 mt-2 font-medium">0 booked</p>
                 </div>
 
                 <!-- Itinerary Card -->
-                <div onclick="viewCategory('itinerary')" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 cursor-pointer hover:shadow-md hover:border-amber-300 transition-all text-center group">
-                    <div class="w-16 h-16 mx-auto bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                <div onclick="viewCategory('itinerary')" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 cursor-pointer hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-amber-300 dark:hover:border-amber-500 transition-all text-center group">
+                    <div class="w-16 h-16 mx-auto bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                         <i data-lucide="map-pin" class="w-8 h-8"></i>
                     </div>
-                    <h2 class="text-xl font-bold text-gray-900">Itinerary</h2>
-                    <p id="summary-itinerary" class="text-gray-500 mt-2 font-medium">0 activities</p>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Itinerary</h2>
+                    <p id="summary-itinerary" class="text-gray-500 dark:text-gray-400 mt-2 font-medium">0 activities</p>
                 </div>
 
                 <!-- Expenses Card -->
-                <div onclick="viewCategory('expenses')" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 cursor-pointer hover:shadow-md hover:border-emerald-300 transition-all text-center group">
-                    <div class="w-16 h-16 mx-auto bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                <div onclick="viewCategory('expenses')" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 cursor-pointer hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-emerald-300 dark:hover:border-emerald-500 transition-all text-center group">
+                    <div class="w-16 h-16 mx-auto bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                         <i data-lucide="dollar-sign" class="w-8 h-8"></i>
                     </div>
-                    <h2 class="text-xl font-bold text-gray-900">Expenses</h2>
-                    <p id="summary-expenses" class="text-gray-500 mt-2 font-medium">$0.00 spent</p>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Expenses</h2>
+                    <p id="summary-expenses" class="text-gray-500 dark:text-gray-400 mt-2 font-medium">SGD$0.00 spent</p>
                 </div>
             </div>
         </div>
@@ -137,26 +156,26 @@
         <!-- VIEW 3: CATEGORY DETAILS                   -->
         <!-- ========================================== -->
         <div id="category-details-view" class="hidden flex-col h-full min-h-[calc(100vh-8rem)]">
-            <button onclick="goBackToTripOverview()" class="inline-flex items-center w-fit text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors mb-6 group">
+            <button onclick="goBackToTripOverview()" class="inline-flex items-center w-fit text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-6 group">
                 <i data-lucide="arrow-left" class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform"></i>
                 <span id="category-back-text">Back to Trip Overview</span>
             </button>
             
-            <div class="flex justify-between items-center mb-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center mb-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                 <div class="flex items-center gap-4">
                     <div id="category-header-icon" class="p-3 rounded-xl"></div>
                     <div>
-                        <h2 id="category-header-title" class="text-2xl font-bold text-gray-900">Category</h2>
-                        <p id="category-header-subtitle" class="text-gray-500 text-sm">Manage items</p>
+                        <h2 id="category-header-title" class="text-2xl font-bold text-gray-900 dark:text-white">Category</h2>
+                        <p id="category-header-subtitle" class="text-gray-500 dark:text-gray-400 text-sm">Manage items</p>
                     </div>
                 </div>
-                <button id="add-item-btn" class="inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2">
+                <button id="add-item-btn" class="inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
                     <i data-lucide="plus" class="w-5 h-5"></i>
                     <span id="add-item-text" class="hidden sm:inline">Add Item</span>
                 </button>
             </div>
 
-            <div id="category-content-container" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div id="category-content-container" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
                 <!-- List renders here -->
             </div>
         </div>
@@ -165,28 +184,28 @@
         <!-- VIEW 4: DAY DETAILS (Itinerary Level 2)    -->
         <!-- ========================================== -->
         <div id="day-details-view" class="hidden flex-col h-full min-h-[calc(100vh-8rem)]">
-            <button onclick="goBackToItinerary()" class="inline-flex items-center w-fit text-sm font-medium text-gray-500 hover:text-amber-600 transition-colors mb-6 group">
+            <button onclick="goBackToItinerary()" class="inline-flex items-center w-fit text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors mb-6 group">
                 <i data-lucide="arrow-left" class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform"></i>
                 <span>Back to Itinerary Overview</span>
             </button>
             
-            <div class="flex justify-between items-center mb-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center mb-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                 <div class="flex items-center gap-4">
-                    <div class="p-3 rounded-xl bg-amber-100 text-amber-600">
+                    <div class="p-3 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
                         <i data-lucide="calendar-clock" class="w-6 h-6"></i>
                     </div>
                     <div>
-                        <h2 id="day-header-title" class="text-2xl font-bold text-gray-900">Day X</h2>
-                        <p id="day-header-subtitle" class="text-gray-500 text-sm">Date</p>
+                        <h2 id="day-header-title" class="text-2xl font-bold text-gray-900 dark:text-white">Day X</h2>
+                        <p id="day-header-subtitle" class="text-gray-500 dark:text-gray-400 text-sm">Date</p>
                     </div>
                 </div>
-                <button onclick="openItineraryModal()" class="inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 bg-amber-600 hover:bg-amber-700 focus:ring-amber-500">
+                <button onclick="openItineraryModal()" class="inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 bg-amber-600 hover:bg-amber-700 focus:ring-amber-500 dark:focus:ring-offset-gray-900">
                     <i data-lucide="plus" class="w-5 h-5"></i>
                     <span class="hidden sm:inline">Add Activity</span>
                 </button>
             </div>
 
-            <div id="day-content-container" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div id="day-content-container" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
                 <!-- List renders here -->
             </div>
         </div>
@@ -198,153 +217,193 @@
     <!-- ========================================== -->
 
     <!-- Trip Modal -->
-    <div id="trip-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm hide-modal modal-overlay px-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden modal-content flex flex-col max-h-[90vh]">
-            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                <h3 id="trip-modal-title" class="text-lg font-semibold text-gray-900">Add New Trip</h3>
-                <button onclick="closeModal('trip-modal')" class="text-gray-400 hover:text-gray-600 rounded-full p-1 hover:bg-gray-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div id="trip-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 dark:bg-gray-900/80 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden modal-content flex flex-col max-h-[90vh]">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                <h3 id="trip-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">Add New Trip</h3>
+                <button onclick="closeModal('trip-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="p-6 overflow-y-auto">
                 <form id="trip-form" class="space-y-4">
                     <input type="hidden" id="trip-id">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Destination</label>
-                        <input type="text" id="trip-destination" required placeholder="e.g., Kyoto, Japan" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Destination</label>
+                        <input type="text" id="trip-destination" required placeholder="e.g., Kyoto, Japan" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                            <input type="date" id="trip-start-date" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
+                            <input type="date" id="trip-start-date" required class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark]">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                            <input type="date" id="trip-end-date" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
+                            <input type="date" id="trip-end-date" required class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark]">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Cover Image URL (Optional)</label>
-                        <input type="url" id="trip-image-url" placeholder="https://example.com/image.jpg" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cover Image URL (Optional)</label>
+                        <input type="url" id="trip-image-url" placeholder="https://example.com/image.jpg" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400">
                     </div>
                 </form>
             </div>
-            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 mt-auto">
-                <button type="button" onclick="closeModal('trip-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-                <button type="button" onclick="saveTrip()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Save Trip</button>
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3 mt-auto">
+                <button type="button" onclick="closeModal('trip-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</button>
+                <button type="button" onclick="saveTrip()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600">Save Trip</button>
             </div>
         </div>
     </div>
 
     <!-- Flight Modal -->
-    <div id="flight-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm hide-modal modal-overlay px-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden modal-content">
-            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                <h3 id="flight-modal-title" class="text-lg font-semibold text-gray-900">Add Flight</h3>
-                <button onclick="closeModal('flight-modal')" class="text-gray-400 hover:text-gray-600 rounded-full p-1 hover:bg-gray-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div id="flight-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 dark:bg-gray-900/80 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden modal-content">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                <h3 id="flight-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">Add Flight</h3>
+                <button onclick="closeModal('flight-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="p-6">
                 <form id="flight-form" class="space-y-4">
                     <input type="hidden" id="flight-id">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Airline & Flight #</label>
-                        <input type="text" id="flight-airline" required placeholder="e.g., Delta DL123" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Airline & Flight #</label>
+                        <input type="text" id="flight-airline" required placeholder="e.g., Delta DL123" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Departure</label>
-                            <input type="datetime-local" id="flight-departure" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Departure</label>
+                            <input type="datetime-local" id="flight-departure" required class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark]">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Arrival</label>
-                            <input type="datetime-local" id="flight-arrival" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Arrival</label>
+                            <input type="datetime-local" id="flight-arrival" required class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark]">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
-                        <textarea id="flight-notes" rows="2" placeholder="Booking Ref, Terminal, Gate, etc." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes (Optional)</label>
+                        <textarea id="flight-notes" rows="2" placeholder="Booking Ref, Terminal, Gate, etc." class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400"></textarea>
                     </div>
                 </form>
             </div>
-            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-                <button type="button" onclick="closeModal('flight-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-                <button type="button" onclick="saveFlight()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Save</button>
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3">
+                <button type="button" onclick="closeModal('flight-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</button>
+                <button type="button" onclick="saveFlight()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600">Save</button>
             </div>
         </div>
     </div>
 
     <!-- Itinerary Modal -->
-    <div id="itinerary-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm hide-modal modal-overlay px-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden modal-content">
-            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                <h3 id="itinerary-modal-title" class="text-lg font-semibold text-gray-900">Add Activity</h3>
-                <button onclick="closeModal('itinerary-modal')" class="text-gray-400 hover:text-gray-600 rounded-full p-1 hover:bg-gray-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div id="itinerary-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 dark:bg-gray-900/80 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden modal-content">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                <h3 id="itinerary-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">Add Activity</h3>
+                <button onclick="closeModal('itinerary-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="p-6">
                 <form id="itinerary-form" class="space-y-4">
                     <input type="hidden" id="itinerary-id">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Activity / Location</label>
-                        <input type="text" id="itinerary-activity" required placeholder="e.g., Visit Louvre Museum" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activity / Location</label>
+                        <input type="text" id="itinerary-activity" required placeholder="e.g., Visit Louvre Museum" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:text-white dark:placeholder-gray-400">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
-                        <input type="datetime-local" id="itinerary-time" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date & Time</label>
+                        <input type="datetime-local" id="itinerary-time" required class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:text-white [color-scheme:light_dark]">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
-                        <textarea id="itinerary-notes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"></textarea>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes (Optional)</label>
+                        <textarea id="itinerary-notes" rows="2" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:text-white dark:placeholder-gray-400"></textarea>
                     </div>
                 </form>
             </div>
-            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-                <button type="button" onclick="closeModal('itinerary-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-                <button type="button" onclick="saveItinerary()" class="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700">Save</button>
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3">
+                <button type="button" onclick="closeModal('itinerary-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</button>
+                <button type="button" onclick="saveItinerary()" class="px-4 py-2 text-sm font-medium text-white bg-amber-600 dark:bg-amber-500 rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600">Save</button>
             </div>
         </div>
     </div>
 
     <!-- Expense Modal -->
-    <div id="expense-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm hide-modal modal-overlay px-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden modal-content">
-            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                <h3 id="expense-modal-title" class="text-lg font-semibold text-gray-900">Add Expense</h3>
-                <button onclick="closeModal('expense-modal')" class="text-gray-400 hover:text-gray-600 rounded-full p-1 hover:bg-gray-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div id="expense-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 dark:bg-gray-900/80 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm overflow-hidden modal-content">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                <h3 id="expense-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">Add Expense</h3>
+                <button onclick="closeModal('expense-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="p-6">
                 <form id="expense-form" class="space-y-4">
                     <input type="hidden" id="expense-id">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                        <input type="text" id="expense-desc" required placeholder="e.g., Dinner at Cafe" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                        <input type="text" id="expense-desc" required placeholder="e.g., Dinner at Cafe" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 dark:text-white dark:placeholder-gray-400">
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
-                        <input type="number" id="expense-amount" step="0.01" min="0" required placeholder="0.00" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
+                            <input type="number" id="expense-amount" step="0.01" min="0" required placeholder="0.00" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 dark:text-white dark:placeholder-gray-400" oninput="calculateSGD()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Local per SGD$1</label>
+                            <input type="number" id="expense-rate" step="0.000001" min="0.000001" required placeholder="1.00" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 transition-colors dark:text-white dark:placeholder-gray-400" oninput="calculateSGD()">
+                        </div>
+                        <div class="col-span-2 flex items-center mb-1">
+                            <input type="checkbox" id="expense-use-nominal" class="w-4 h-4 text-emerald-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-emerald-500 dark:focus:ring-emerald-600 dark:ring-offset-gray-800 cursor-pointer" onchange="toggleNominalRate()">
+                            <label for="expense-use-nominal" class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">Use nominal rate</label>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300 bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-100 dark:border-emerald-800/50 flex justify-between items-center">
+                        <span>Equivalent in SGD:</span>
+                        <span id="expense-sgd-calc" class="font-bold text-emerald-700 dark:text-emerald-400 text-lg">SGD$ 0.00</span>
                     </div>
                 </form>
             </div>
-            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-                <button type="button" onclick="closeModal('expense-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-                <button type="button" onclick="saveExpense()" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700">Save</button>
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3">
+                <button type="button" onclick="closeModal('expense-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</button>
+                <button type="button" onclick="saveExpense()" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 dark:bg-emerald-500 rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-600">Save</button>
             </div>
         </div>
     </div>
 
     <!-- Generic Delete Modal -->
-    <div id="delete-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm hide-modal modal-overlay px-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden modal-content">
+    <div id="delete-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 dark:bg-gray-900/80 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm overflow-hidden modal-content">
             <div class="p-6 text-center">
-                <div class="w-12 h-12 rounded-full bg-red-100 mx-auto flex items-center justify-center mb-4"><i data-lucide="alert-triangle" class="w-6 h-6 text-red-600"></i></div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Delete Item?</h3>
-                <p class="text-sm text-gray-500">Are you sure you want to delete this? This action cannot be undone.</p>
+                <div class="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 mx-auto flex items-center justify-center mb-4"><i data-lucide="alert-triangle" class="w-6 h-6 text-red-600 dark:text-red-400"></i></div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Item?</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Are you sure you want to delete this? This action cannot be undone.</p>
             </div>
-            <div class="px-6 py-4 bg-gray-50 flex justify-center gap-3">
-                <button onclick="closeModal('delete-modal')" class="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-                <button onclick="confirmDelete()" class="w-full px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700">Delete</button>
+            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 flex justify-center gap-3">
+                <button onclick="closeModal('delete-modal')" class="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</button>
+                <button onclick="confirmDelete()" class="w-full px-4 py-2 text-sm font-medium text-white bg-red-600 dark:bg-red-500 border border-transparent rounded-lg hover:bg-red-700 dark:hover:bg-red-600">Delete</button>
             </div>
         </div>
     </div>
 
     <script>
+        // --- Theme Management ---
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+        // Set initial icon state based on active class
+        if (document.documentElement.classList.contains('dark')) {
+            themeToggleLightIcon.classList.remove('hidden');
+        } else {
+            themeToggleDarkIcon.classList.remove('hidden');
+        }
+
+        themeToggleBtn.addEventListener('click', function() {
+            themeToggleDarkIcon.classList.toggle('hidden');
+            themeToggleLightIcon.classList.toggle('hidden');
+
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('color-theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('color-theme', 'dark');
+            }
+        });
+
+
         // --- API & State Management ---
         const API_URL = "https://script.google.com/macros/s/AKfycbybx4GaX7i8YIbRDoOpboA_U_5okOJGo48Pm82HRMLiAmdj_2R02fE529a_G52k9DOj/exec";
         
@@ -419,11 +478,17 @@
         
         const getStatusBadge = (status) => {
             const badges = {
-                upcoming: '<span class="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800 border border-blue-200">Upcoming</span>',
-                completed: '<span class="px-3 py-1 text-sm font-medium rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">Completed</span>'
+                upcoming: '<span class="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800">Upcoming</span>',
+                completed: '<span class="px-3 py-1 text-sm font-medium rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800">Completed</span>'
             };
             // Default to upcoming if undefined
             return badges[status] || badges['upcoming'];
+        };
+
+        const getNominalRate = (trip) => {
+            if (!trip || !trip.expenses) return 1.00;
+            const rateObj = trip.expenses.find(e => e.id === '_NOMINAL_RATE_');
+            return rateObj ? parseFloat(rateObj.rate) : 1.00;
         };
 
         const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2, 5);
@@ -528,20 +593,20 @@
                 const imgUrl = trip.imageUrl || dynamicImage;
 
                 container.innerHTML += `
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 group flex flex-col h-full cursor-pointer" onclick="viewTripOverview('${trip.id}')">
-                        <div class="relative h-48 overflow-hidden bg-gray-200">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 transition-all duration-300 group flex flex-col h-full cursor-pointer" onclick="viewTripOverview('${trip.id}')">
+                        <div class="relative h-48 overflow-hidden bg-gray-200 dark:bg-gray-700">
                             <img src="${imgUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src='https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600'">
                             <div class="absolute top-3 right-3 flex gap-2">${getStatusBadge(trip.status)}</div>
                             <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-4">
                                 <div class="flex gap-2">
-                                    <button onclick="event.stopPropagation(); openTripModal('${trip.id}')" class="p-2 bg-white/90 rounded-lg hover:bg-white text-gray-700 transition-colors shadow-sm" title="Edit Trip"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                                    <button onclick="event.stopPropagation(); triggerDelete('trip', '${trip.id}')" class="p-2 bg-white/90 rounded-lg hover:bg-red-50 text-red-600 transition-colors shadow-sm" title="Delete Trip"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    <button onclick="event.stopPropagation(); openTripModal('${trip.id}')" class="p-2 bg-white/90 dark:bg-gray-800/90 rounded-lg hover:bg-white dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors shadow-sm" title="Edit Trip"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                    <button onclick="event.stopPropagation(); triggerDelete('trip', '${trip.id}')" class="p-2 bg-white/90 dark:bg-gray-800/90 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 transition-colors shadow-sm" title="Delete Trip"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                 </div>
                             </div>
                         </div>
                         <div class="p-5 flex flex-col flex-grow">
-                            <h3 class="text-xl font-bold text-gray-900 mb-2 line-clamp-1">${trip.destination}</h3>
-                            <div class="flex items-center text-sm text-gray-500 mb-4"><i data-lucide="calendar" class="w-4 h-4 mr-2"></i><span>${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}</span></div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 line-clamp-1">${trip.destination}</h3>
+                            <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4"><i data-lucide="calendar" class="w-4 h-4 mr-2"></i><span>${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}</span></div>
                         </div>
                     </div>`;
             });
@@ -614,27 +679,33 @@
             const statusSelectHtml = `
                 <select onchange="updateTripStatus(this.value)" class="pl-3 pr-8 py-1.5 text-sm font-medium rounded-full outline-none transition-colors cursor-pointer border ${
                     trip.status === 'completed' 
-                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200 focus:ring-2 focus:ring-emerald-500' 
-                    : 'bg-blue-100 text-blue-800 border-blue-200 focus:ring-2 focus:ring-blue-500'
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800 focus:ring-2 focus:ring-emerald-500' 
+                    : 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 focus:ring-2 focus:ring-blue-500'
                 }">
-                    <option value="upcoming" ${trip.status !== 'completed' ? 'selected' : ''}>Upcoming</option>
-                    <option value="completed" ${trip.status === 'completed' ? 'selected' : ''}>Completed</option>
+                    <option value="upcoming" class="dark:bg-gray-800" ${trip.status !== 'completed' ? 'selected' : ''}>Upcoming</option>
+                    <option value="completed" class="dark:bg-gray-800" ${trip.status === 'completed' ? 'selected' : ''}>Completed</option>
                 </select>
             `;
             document.getElementById('overview-status-badge').innerHTML = statusSelectHtml;
 
             const flightCount = trip.flights ? trip.flights.length : 0;
             const itineraryCount = trip.itinerary ? trip.itinerary.length : 0;
-            const expensesList = trip.expenses || [];
+            
+            const nominalRate = getNominalRate(trip);
+            const actualExpenses = (trip.expenses || []).filter(e => e.id !== '_NOMINAL_RATE_');
             
             document.getElementById('summary-flights').textContent = `${flightCount} booked`;
             document.getElementById('summary-itinerary').textContent = `${itineraryCount} activities`;
-            const totalExp = expensesList.reduce((sum, e) => sum + parseFloat(e.amount), 0);
-            document.getElementById('summary-expenses').textContent = `$${totalExp.toFixed(2)} spent`;
+            const totalExp = actualExpenses.reduce((sum, e) => {
+                const isNominal = e.useNominal !== false;
+                const rate = isNominal ? nominalRate : parseFloat(e.rate || 1);
+                const validRate = rate > 0 ? rate : 1;
+                return sum + (parseFloat(e.amount) / validRate);
+            }, 0);
+            document.getElementById('summary-expenses').textContent = `SGD$${totalExp.toFixed(2)} spent`;
             
             lucide.createIcons();
         };
-
 
         // ==========================================
         // LEVEL 3: CATEGORY DETAILS
@@ -652,32 +723,32 @@
 
             if (currentCategory === 'flights') {
                 headerTitle.textContent = 'Flights';
-                headerIcon.className = 'p-3 rounded-xl bg-blue-100 text-blue-600';
+                headerIcon.className = 'p-3 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400';
                 headerIcon.innerHTML = '<i data-lucide="plane" class="w-6 h-6"></i>';
-                addBtn.className = 'inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500';
+                addBtn.className = 'inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:ring-blue-500';
                 addBtn.onclick = () => openFlightModal();
                 addBtn.classList.remove('hidden');
                 document.getElementById('category-header-subtitle').textContent = 'Manage items';
                 document.getElementById('add-item-text').textContent = 'Add Flight';
 
                 const flights = trip.flights || [];
-                if (flights.length === 0) container.innerHTML = '<p class="text-gray-500 text-center py-8">No flights added yet.</p>';
+                if (flights.length === 0) container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">No flights added yet.</p>';
                 else {
                     const list = document.createElement('div'); list.className = 'space-y-4';
                     [...flights].sort((a,b) => new Date(a.departure) - new Date(b.departure)).forEach(f => {
                         list.innerHTML += `
-                            <div class="flex flex-col md:flex-row md:items-start justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-200 transition-colors group">
+                            <div class="flex flex-col md:flex-row md:items-start justify-between p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-500 transition-colors group">
                                 <div class="mb-4 md:mb-0 w-full">
-                                    <h4 class="font-bold text-gray-900 text-lg">${f.airline}</h4>
-                                    <div class="flex flex-col sm:flex-row sm:gap-6 mt-2 text-sm text-gray-600">
-                                        <div class="flex items-center gap-2"><i data-lucide="plane-takeoff" class="w-4 h-4 text-blue-500"></i> ${formatDateTime(f.departure)}</div>
-                                        <div class="flex items-center gap-2 mt-1 sm:mt-0"><i data-lucide="plane-landing" class="w-4 h-4 text-blue-500"></i> ${formatDateTime(f.arrival)}</div>
+                                    <h4 class="font-bold text-gray-900 dark:text-white text-lg">${f.airline}</h4>
+                                    <div class="flex flex-col sm:flex-row sm:gap-6 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <div class="flex items-center gap-2"><i data-lucide="plane-takeoff" class="w-4 h-4 text-blue-500 dark:text-blue-400"></i> ${formatDateTime(f.departure)}</div>
+                                        <div class="flex items-center gap-2 mt-1 sm:mt-0"><i data-lucide="plane-landing" class="w-4 h-4 text-blue-500 dark:text-blue-400"></i> ${formatDateTime(f.arrival)}</div>
                                     </div>
-                                    ${f.notes ? `<p class="text-gray-600 text-sm mt-3 bg-white p-3 rounded-lg border border-gray-100">${f.notes}</p>` : ''}
+                                    ${f.notes ? `<p class="text-gray-600 dark:text-gray-300 text-sm mt-3 bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700">${f.notes}</p>` : ''}
                                 </div>
                                 <div class="flex gap-2 justify-end shrink-0 ml-4">
-                                    <button onclick="openFlightModal('${f.id}')" class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><i data-lucide="edit-2" class="w-5 h-5"></i></button>
-                                    <button onclick="triggerDelete('flight', '${f.id}')" class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                    <button onclick="openFlightModal('${f.id}')" class="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"><i data-lucide="edit-2" class="w-5 h-5"></i></button>
+                                    <button onclick="triggerDelete('flight', '${f.id}')" class="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
                                 </div>
                             </div>`;
                     });
@@ -686,7 +757,7 @@
             } 
             else if (currentCategory === 'itinerary') {
                 headerTitle.textContent = 'Itinerary';
-                headerIcon.className = 'p-3 rounded-xl bg-amber-100 text-amber-600';
+                headerIcon.className = 'p-3 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400';
                 headerIcon.innerHTML = '<i data-lucide="map-pin" class="w-6 h-6"></i>';
                 addBtn.className = 'hidden'; 
                 document.getElementById('category-header-subtitle').textContent = 'Select a day to view activities';
@@ -695,7 +766,7 @@
                 const itinerary = trip.itinerary || [];
                 
                 if (dates.length === 0) {
-                    container.innerHTML = '<p class="text-gray-500 text-center py-8">Please set valid trip start and end dates to view itinerary days.</p>';
+                    container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">Please set valid trip start and end dates to view itinerary days.</p>';
                 } else {
                     const grid = document.createElement('div');
                     grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
@@ -703,13 +774,13 @@
                     dates.forEach((date, index) => {
                         const dayActivities = itinerary.filter(i => i.time.startsWith(date));
                         grid.innerHTML += `
-                            <div onclick="viewDay('${date}', ${index + 1})" class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-amber-300 cursor-pointer transition-all group">
+                            <div onclick="viewDay('${date}', ${index + 1})" class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-amber-300 dark:hover:border-amber-500 cursor-pointer transition-all group">
                                 <div class="flex justify-between items-start mb-2">
-                                    <h3 class="font-bold text-lg text-gray-900 group-hover:text-amber-600 transition-colors">Day ${index + 1}</h3>
-                                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300 group-hover:text-amber-500 transform group-hover:translate-x-1 transition-all"></i>
+                                    <h3 class="font-bold text-lg text-gray-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Day ${index + 1}</h3>
+                                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-amber-500 dark:group-hover:text-amber-400 transform group-hover:translate-x-1 transition-all"></i>
                                 </div>
-                                <p class="text-sm text-gray-500 mb-4">${formatDate(date)}</p>
-                                <div class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-medium">
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">${formatDate(date)}</p>
+                                <div class="inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full text-xs font-medium">
                                     <i data-lucide="list" class="w-3.5 h-3.5"></i>
                                     ${dayActivities.length} activities
                                 </div>
@@ -723,13 +794,13 @@
                     
                     if (unscheduled.length > 0) {
                         grid.innerHTML += `
-                            <div onclick="viewDay('unscheduled', 'Other')" class="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-400 cursor-pointer transition-all group">
+                            <div onclick="viewDay('unscheduled', 'Other')" class="bg-gray-50 dark:bg-gray-700/50 p-5 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-gray-400 dark:hover:border-gray-400 cursor-pointer transition-all group">
                                 <div class="flex justify-between items-start mb-2">
-                                    <h3 class="font-bold text-lg text-gray-700 group-hover:text-gray-900 transition-colors">Other Dates</h3>
-                                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400 group-hover:text-gray-600 transform group-hover:translate-x-1 transition-all"></i>
+                                    <h3 class="font-bold text-lg text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Other Dates</h3>
+                                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 transform group-hover:translate-x-1 transition-all"></i>
                                 </div>
-                                <p class="text-sm text-gray-500 mb-4">Activities outside trip dates</p>
-                                <div class="inline-flex items-center gap-1.5 bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Activities outside trip dates</p>
+                                <div class="inline-flex items-center gap-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-full text-xs font-medium">
                                     <i data-lucide="list" class="w-3.5 h-3.5"></i>
                                     ${unscheduled.length} activities
                                 </div>
@@ -741,36 +812,62 @@
             }
             else if (currentCategory === 'expenses') {
                 headerTitle.textContent = 'Expenses';
-                headerIcon.className = 'p-3 rounded-xl bg-emerald-100 text-emerald-600';
+                headerIcon.className = 'p-3 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400';
                 headerIcon.innerHTML = '<i data-lucide="dollar-sign" class="w-6 h-6"></i>';
-                addBtn.className = 'inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500';
+                addBtn.className = 'inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 focus:ring-emerald-500';
                 addBtn.onclick = () => openExpenseModal();
                 addBtn.classList.remove('hidden');
                 document.getElementById('category-header-subtitle').textContent = 'Manage items';
                 document.getElementById('add-item-text').textContent = 'Add Expense';
 
-                const expenses = trip.expenses || [];
-                const total = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+                const nominalRate = getNominalRate(trip);
+                const actualExpenses = (trip.expenses || []).filter(e => e.id !== '_NOMINAL_RATE_');
+                const total = actualExpenses.reduce((sum, e) => {
+                    const isNominal = e.useNominal !== false;
+                    const rate = isNominal ? nominalRate : parseFloat(e.rate || 1);
+                    const validRate = rate > 0 ? rate : 1;
+                    return sum + (parseFloat(e.amount) / validRate);
+                }, 0);
                 
                 container.innerHTML = `
-                    <div class="flex justify-between items-center p-4 bg-emerald-50 border border-emerald-100 rounded-xl mb-6">
-                        <span class="text-emerald-800 font-medium">Total Trip Expenses</span>
-                        <span class="text-2xl font-bold text-emerald-700">$${total.toFixed(2)}</span>
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-xl mb-6 gap-4">
+                        <div>
+                            <span class="text-emerald-800 dark:text-emerald-400 font-medium block mb-1">Trip Nominal Rate</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-emerald-600 dark:text-emerald-500 font-medium">SGD$1 =</span>
+                                <input type="number" id="trip-nominal-rate" step="0.000001" min="0.000001" value="${nominalRate}" class="w-24 px-2 py-1 text-sm bg-white dark:bg-gray-800 border border-emerald-200 dark:border-emerald-700 rounded-md focus:ring-emerald-500 dark:text-white outline-none" onchange="updateNominalRate(this.value)">
+                                <span class="text-sm text-emerald-600 dark:text-emerald-500 font-medium">Local</span>
+                            </div>
+                        </div>
+                        <div class="text-left sm:text-right">
+                            <span class="text-emerald-800 dark:text-emerald-400 font-medium block mb-1">Total Trip Expenses</span>
+                            <span class="text-2xl font-bold text-emerald-700 dark:text-emerald-500">SGD$${total.toFixed(2)}</span>
+                        </div>
                     </div>
                 `;
 
-                if (expenses.length === 0) container.innerHTML += '<p class="text-gray-500 text-center py-4">No expenses recorded yet.</p>';
+                if (actualExpenses.length === 0) container.innerHTML += '<p class="text-gray-500 dark:text-gray-400 text-center py-4">No expenses recorded yet.</p>';
                 else {
                     const list = document.createElement('div'); list.className = 'space-y-3';
-                    expenses.forEach(e => {
+                    actualExpenses.forEach(e => {
+                        const isNominal = e.useNominal !== false;
+                        const rate = isNominal ? nominalRate : parseFloat(e.rate || 1);
+                        const validRate = rate > 0 ? rate : 1;
+                        const sgdAmount = (parseFloat(e.amount) / validRate).toFixed(2);
+                        const rateLabel = isNominal ? 'Nominal' : 'Custom';
+                        const originalAmountHtml = rate !== 1 ? `<div class="text-xs text-gray-500 dark:text-gray-400 text-right mt-0.5" title="${rateLabel} Rate: ${rate}">${parseFloat(e.amount).toFixed(2)} ÷ ${rate}</div>` : '';
+
                         list.innerHTML += `
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-emerald-200 transition-colors group">
-                                <span class="font-medium text-gray-900">${e.description}</span>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-500 transition-colors group">
+                                <span class="font-medium text-gray-900 dark:text-white">${e.description}</span>
                                 <div class="flex items-center gap-4">
-                                    <span class="font-bold text-gray-900 text-lg">$${parseFloat(e.amount).toFixed(2)}</span>
+                                    <div class="flex flex-col items-end justify-center">
+                                        <span class="font-bold text-gray-900 dark:text-white text-lg">SGD$${sgdAmount}</span>
+                                        ${originalAmountHtml}
+                                    </div>
                                     <div class="flex gap-1">
-                                        <button onclick="openExpenseModal('${e.id}')" class="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                                        <button onclick="triggerDelete('expense', '${e.id}')" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                        <button onclick="openExpenseModal('${e.id}')" class="p-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                        <button onclick="triggerDelete('expense', '${e.id}')" class="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                     </div>
                                 </div>
                             </div>`;
@@ -807,28 +904,28 @@
             }
 
             if (dayActivities.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-center py-8">No activities planned for this day.</p>';
+                container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">No activities planned for this day.</p>';
             } else {
                 const list = document.createElement('div'); list.className = 'pl-2';
                 [...dayActivities].sort((a,b) => new Date(a.time) - new Date(b.time)).forEach(item => {
                     list.innerHTML += `
                         <div class="relative pl-10 pb-6 timeline-item group">
                             <div class="timeline-line"></div>
-                            <div class="absolute left-0 top-1.5 w-[20px] h-[20px] rounded-full bg-amber-100 border-4 border-white shadow-sm z-10 flex items-center justify-center">
-                                <div class="w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
+                            <div class="absolute left-0 top-1.5 w-[20px] h-[20px] rounded-full bg-amber-100 dark:bg-amber-900 border-4 border-white dark:border-gray-800 shadow-sm z-10 flex items-center justify-center transition-colors">
+                                <div class="w-2.5 h-2.5 bg-amber-500 dark:bg-amber-400 rounded-full"></div>
                             </div>
-                            <div class="bg-gray-50 rounded-xl border border-gray-100 p-4 hover:border-amber-200 transition-colors">
+                            <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-700 p-4 hover:border-amber-200 dark:hover:border-amber-500 transition-colors">
                                 <div class="flex justify-between items-start mb-2">
                                     <div>
-                                        <h4 class="font-bold text-gray-900 text-lg">${item.activity}</h4>
-                                        <div class="text-sm font-medium text-amber-600 mt-1">${formatDateTime(item.time)}</div>
+                                        <h4 class="font-bold text-gray-900 dark:text-white text-lg">${item.activity}</h4>
+                                        <div class="text-sm font-medium text-amber-600 dark:text-amber-400 mt-1">${formatDateTime(item.time)}</div>
                                     </div>
                                     <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onclick="openItineraryModal('${item.id}')" class="p-1.5 text-gray-500 hover:text-amber-600 rounded-lg"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                                        <button onclick="triggerDelete('itinerary', '${item.id}')" class="p-1.5 text-gray-500 hover:text-red-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                        <button onclick="openItineraryModal('${item.id}')" class="p-1.5 text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 rounded-lg"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                        <button onclick="triggerDelete('itinerary', '${item.id}')" class="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                     </div>
                                 </div>
-                                ${item.notes ? `<p class="text-gray-600 text-sm mt-3 bg-white p-3 rounded-lg border border-gray-100">${item.notes}</p>` : ''}
+                                ${item.notes ? `<p class="text-gray-600 dark:text-gray-300 text-sm mt-3 bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700">${item.notes}</p>` : ''}
                             </div>
                         </div>`;
                 });
@@ -914,26 +1011,96 @@
             currentDayDate ? renderDayDetails() : renderCategoryDetails();
         };
 
+        window.updateNominalRate = async (val) => {
+            if (!currentTripId) return;
+            const trip = trips.find(t => t.id === currentTripId);
+            const newRate = parseFloat(val) || 1.00;
+            
+            trip.expenses = trip.expenses || [];
+            const rateObj = trip.expenses.find(e => e.id === '_NOMINAL_RATE_');
+            if (rateObj) rateObj.rate = newRate;
+            else trip.expenses.push({ id: '_NOMINAL_RATE_', rate: newRate });
+            
+            showLoader("Updating nominal rate...");
+            await syncTripToDatabase(trip);
+            hideLoader();
+            
+            // Re-render updates the totals and all expenses linked to the nominal rate dynamically
+            renderCategoryDetails(); 
+        };
+
+        const calculateSGD = () => {
+            const amount = parseFloat(document.getElementById('expense-amount').value) || 0;
+            const rate = parseFloat(document.getElementById('expense-rate').value) || 0;
+            const validRate = rate > 0 ? rate : 1; // Prevent division by zero
+            const sgd = amount / validRate;
+            document.getElementById('expense-sgd-calc').textContent = `SGD$ ${sgd.toFixed(2)}`;
+        };
+
+        const toggleNominalRate = () => {
+            const useNominal = document.getElementById('expense-use-nominal').checked;
+            const rateInput = document.getElementById('expense-rate');
+            
+            if (useNominal) {
+                const trip = trips.find(t => t.id === currentTripId);
+                rateInput.value = getNominalRate(trip);
+                rateInput.disabled = true;
+                rateInput.classList.add('bg-gray-100', 'text-gray-500', 'dark:bg-gray-600', 'dark:text-gray-400', 'cursor-not-allowed');
+            } else {
+                rateInput.disabled = false;
+                rateInput.classList.remove('bg-gray-100', 'text-gray-500', 'dark:bg-gray-600', 'dark:text-gray-400', 'cursor-not-allowed');
+            }
+            calculateSGD();
+        };
+
         const openExpenseModal = (id = null) => {
             const form = document.getElementById('expense-form'); form.reset();
             const trip = trips.find(t => t.id === currentTripId);
+            const nominalRate = getNominalRate(trip);
+
             if (id) {
                 document.getElementById('expense-modal-title').textContent = 'Edit Expense';
-                const e = (trip.expenses || []).find(x => x.id === id);
-                document.getElementById('expense-id').value = e.id; document.getElementById('expense-desc').value = e.description; document.getElementById('expense-amount').value = e.amount;
-            } else { document.getElementById('expense-modal-title').textContent = 'Add Expense'; document.getElementById('expense-id').value = ''; }
+                const actualExpenses = (trip.expenses || []).filter(e => e.id !== '_NOMINAL_RATE_');
+                const e = actualExpenses.find(x => x.id === id);
+                document.getElementById('expense-id').value = e.id; 
+                document.getElementById('expense-desc').value = e.description; 
+                document.getElementById('expense-amount').value = e.amount;
+                
+                const useNominal = e.useNominal !== false; // defaults to true
+                document.getElementById('expense-use-nominal').checked = useNominal;
+                document.getElementById('expense-rate').value = useNominal ? nominalRate : (e.rate || 1.00);
+            } else { 
+                document.getElementById('expense-modal-title').textContent = 'Add Expense'; 
+                document.getElementById('expense-id').value = ''; 
+                document.getElementById('expense-use-nominal').checked = true;
+                document.getElementById('expense-rate').value = nominalRate;
+            }
+            toggleNominalRate(); // Ensure the input is greyed out appropriately
             openModal('expense-modal');
         };
+
         const saveExpense = async () => {
             if (!document.getElementById('expense-form').checkValidity()) return document.getElementById('expense-form').reportValidity();
             
             showLoader("Saving expense...");
             const trip = trips.find(t => t.id === currentTripId); 
             const id = document.getElementById('expense-id').value;
-            const data = { id: id || generateId(), description: document.getElementById('expense-desc').value, amount: parseFloat(document.getElementById('expense-amount').value).toFixed(2) };
+            const useNominal = document.getElementById('expense-use-nominal').checked;
+            
+            const data = { 
+                id: id || generateId(), 
+                description: document.getElementById('expense-desc').value, 
+                amount: parseFloat(document.getElementById('expense-amount').value).toFixed(2),
+                rate: parseFloat(document.getElementById('expense-rate').value).toFixed(6),
+                useNominal: useNominal
+            };
             
             trip.expenses = trip.expenses || [];
-            id ? trip.expenses = trip.expenses.map(e => e.id === id ? data : e) : trip.expenses.push(data);
+            if (id) {
+                trip.expenses = trip.expenses.map(e => e.id === id ? data : e);
+            } else {
+                trip.expenses.push(data);
+            }
             
             await syncTripToDatabase(trip);
 
