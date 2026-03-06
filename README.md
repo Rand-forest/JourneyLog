@@ -10,6 +10,7 @@ We are going to use a free service called GitHub Pages. Think of GitHub as a gia
 This guide is completely dummy-proof. Just follow the steps one by one!
 
 **Step 1: Save your Website File to your Computer**
+---------------------------------------------------
 
 Right now, your website code is just text on your screen. We need to save it as a file.
 
@@ -26,9 +27,11 @@ Name the file exactly this: index.html
 Important: Make sure it doesn't save as index.html.txt. It must end in .html.
 
 Save it somewhere easy to find, like your Desktop.
+
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 **Step 2: Create a Free GitHub Account**
+----------------------------------------
 
 If you already have a GitHub account, you can skip this step!
 
@@ -37,9 +40,11 @@ Go to https://github.com
 Click the Sign up button in the top right corner.
 
 Follow the prompts to enter your email, create a password, and pick a username.
+
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 **Step 3: Create a "Repository" (A Project Folder)**
+----------------------------------------------------
 
 A "repository" is just GitHub's fancy word for a folder that holds your project.
 
@@ -54,9 +59,11 @@ Repository name: Type a name for your project (for example: my-travel-app). No s
 Keep it set to Public (this is required for the free website hosting).
 
 Scroll all the way down to the bottom and click the green Create repository button.
+
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 **Step 4: Upload your Website File**
+------------------------------------
 
 Now we put your index.html file into your new project folder.
 
@@ -70,7 +77,10 @@ Wait a few seconds for it to load.
 
 Scroll down and click the green Commit changes button. (Note: "Commit" is just computer-speak for "Save").
 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 **Step 5: Turn on the Magic (Enable GitHub Pages)**
+---------------------------------------------------
 
 Your file is safely stored! Now we tell GitHub to display it as a website.
 
@@ -85,9 +95,11 @@ Click the dropdown that currently says None and change it to main.
 Leave the next dropdown as / (root).
 
 Click the Save button right next to it.
+
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 **Step 6: Get Your Live Link! 🎉**
+-----------------------------------
 
 You are done! But you have to wait just a minute.
 
@@ -100,9 +112,11 @@ At the very top of the screen, a message will appear saying: "Your site is live 
 Click that link! It will open your fully functioning JourneyLog app in a new tab.
 
 Bookmark that link! You can now visit it on your phone, tablet, or send it to your travel buddies. Because you set up the Google Sheet backend, everything you type into this website will automatically save to your Google Sheet!
+
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 **Need to make an update later?**
+---------------------------------
 
 If you ever want to change the code (like changing the title or colors):
 
