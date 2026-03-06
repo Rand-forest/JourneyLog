@@ -510,20 +510,18 @@
                     return new Date(a.startDate) - new Date(b.startDate);
                 }
             }).forEach(trip => {
-                // Image Upgrade Fallback List
-                const randomDefaultImages = [
-                    'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600',
-                    'https://images.unsplash.com/photo-1488085061387-422e29b40080?w=600',
-                    'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600',
-                    'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600'
-                ];
-                const fallbackImage = randomDefaultImages[trip.id.charCodeAt(0) % randomDefaultImages.length] || randomDefaultImages[0];
-                const imgUrl = trip.imageUrl || fallbackImage;
+                // Smart Image Fetcher: Extracts the first word (city) from the destination
+                const locationName = trip.destination.split(',')[0].trim();
+                const searchKeyword = encodeURIComponent(locationName || 'travel');
+                
+                // Uses a free image service that returns a picture based on the keyword
+                const dynamicImage = `https://loremflickr.com/600/400/${searchKeyword},landmark/all`;
+                const imgUrl = trip.imageUrl || dynamicImage;
 
                 container.innerHTML += `
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 group flex flex-col h-full cursor-pointer" onclick="viewTripOverview('${trip.id}')">
                         <div class="relative h-48 overflow-hidden bg-gray-200">
-                            <img src="${imgUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src='${fallbackImage}'">
+                            <img src="${imgUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src='https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600'">
                             <div class="absolute top-3 right-3 flex gap-2">${getStatusBadge(trip.status)}</div>
                             <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-4">
                                 <div class="flex gap-2">
