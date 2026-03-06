@@ -97,6 +97,7 @@
                             <i data-lucide="calendar" class="w-4 h-4 mr-2"></i> <span>Dates</span>
                         </p>
                     </div>
+                    <!-- Editable Status Dropdown injects here -->
                     <div id="overview-status-badge"></div>
                 </div>
             </div>
@@ -223,14 +224,6 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Cover Image URL (Optional)</label>
                         <input type="url" id="trip-image-url" placeholder="https://example.com/image.jpg" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <select id="trip-status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white">
-                            <option value="planning">Planning</option>
-                            <option value="upcoming">Upcoming</option>
-                            <option value="completed">Completed</option>
-                        </select>
                     </div>
                 </form>
             </div>
@@ -401,6 +394,20 @@
             }
         };
 
+        const updateTripStatus = async (newStatus) => {
+            if (!currentTripId) return;
+            const trip = trips.find(t => t.id === currentTripId);
+            if (trip.status === newStatus) return;
+            
+            trip.status = newStatus;
+            showLoader("Updating status...");
+            await syncTripToDatabase(trip);
+            hideLoader();
+            
+            // Re-render overview to update the dropdown's appearance
+            renderTripOverview();
+        };
+
 
         // --- Utils ---
         const formatDate = (dateStr) => dateStr ? new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
@@ -409,14 +416,16 @@
             const d = new Date(dateStr);
             return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' • ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         };
+        
         const getStatusBadge = (status) => {
             const badges = {
                 upcoming: '<span class="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800 border border-blue-200">Upcoming</span>',
-                planning: '<span class="px-3 py-1 text-sm font-medium rounded-full bg-amber-100 text-amber-800 border border-amber-200">Planning</span>',
                 completed: '<span class="px-3 py-1 text-sm font-medium rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">Completed</span>'
             };
-            return badges[status] || badges['planning'];
+            // Default to upcoming if undefined
+            return badges[status] || badges['upcoming'];
         };
+
         const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2, 5);
         const getDatesBetween = (startDate, endDate) => {
             const dates = [];
@@ -549,11 +558,9 @@
                 document.getElementById('trip-start-date').value = trip.startDate.split('T')[0]; // Format for input
                 document.getElementById('trip-end-date').value = trip.endDate.split('T')[0]; // Format for input
                 document.getElementById('trip-image-url').value = trip.imageUrl;
-                document.getElementById('trip-status').value = trip.status;
             } else {
                 document.getElementById('trip-modal-title').textContent = 'Add New Trip';
                 document.getElementById('trip-id').value = '';
-                document.getElementById('trip-status').value = 'planning';
             }
             openModal('trip-modal');
         };
@@ -565,21 +572,21 @@
             showLoader("Saving trip to database...");
 
             const id = document.getElementById('trip-id').value;
+            const existingTrip = id ? trips.find(t => t.id === id) : null;
+            
             const tripData = {
                 id: id || generateId(),
                 destination: document.getElementById('trip-destination').value,
                 startDate: document.getElementById('trip-start-date').value,
                 endDate: document.getElementById('trip-end-date').value,
                 imageUrl: document.getElementById('trip-image-url').value,
-                status: document.getElementById('trip-status').value,
-                flights: [], itinerary: [], expenses: []
+                status: existingTrip ? existingTrip.status : 'upcoming', // Default new trips to upcoming
+                flights: existingTrip ? existingTrip.flights || [] : [],
+                itinerary: existingTrip ? existingTrip.itinerary || [] : [],
+                expenses: existingTrip ? existingTrip.expenses || [] : []
             };
 
             if (id) {
-                const ex = trips.find(t => t.id === id);
-                tripData.flights = ex.flights || []; 
-                tripData.itinerary = ex.itinerary || []; 
-                tripData.expenses = ex.expenses || [];
                 trips = trips.map(t => t.id === id ? tripData : t);
             } else { 
                 trips.push(tripData); 
@@ -602,7 +609,19 @@
             
             document.getElementById('overview-destination').textContent = trip.destination;
             document.getElementById('overview-dates').innerHTML = `<i data-lucide="calendar" class="w-4 h-4 mr-2"></i> <span>${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}</span>`;
-            document.getElementById('overview-status-badge').innerHTML = getStatusBadge(trip.status);
+            
+            // Editable Status Dropdown injects here
+            const statusSelectHtml = `
+                <select onchange="updateTripStatus(this.value)" class="pl-3 pr-8 py-1.5 text-sm font-medium rounded-full outline-none transition-colors cursor-pointer border ${
+                    trip.status === 'completed' 
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200 focus:ring-2 focus:ring-emerald-500' 
+                    : 'bg-blue-100 text-blue-800 border-blue-200 focus:ring-2 focus:ring-blue-500'
+                }">
+                    <option value="upcoming" ${trip.status !== 'completed' ? 'selected' : ''}>Upcoming</option>
+                    <option value="completed" ${trip.status === 'completed' ? 'selected' : ''}>Completed</option>
+                </select>
+            `;
+            document.getElementById('overview-status-badge').innerHTML = statusSelectHtml;
 
             const flightCount = trip.flights ? trip.flights.length : 0;
             const itineraryCount = trip.itinerary ? trip.itinerary.length : 0;
