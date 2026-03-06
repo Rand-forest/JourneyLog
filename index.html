@@ -538,7 +538,15 @@
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action: isRegister ? 'register' : 'login', username, password })
                 });
-                const result = await response.json();
+                
+                const textResponse = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(textResponse);
+                } catch (parseError) {
+                    console.error("HTML Error received instead of JSON:", textResponse);
+                    throw new Error("Apps Script deployment error. Make sure 'Who has access' is set to 'Anyone'.");
+                }
 
                 if (result.success) {
                     currentUser = username;
@@ -550,13 +558,13 @@
                     document.getElementById('app-wrapper').classList.add('flex');
                     
                     showToast(result.message);
-                    fetchTripsFromDatabase(); // Fetch only this user's trips
+                    fetchTripsFromDatabase(); 
                 } else {
                     showToast(result.message, true);
                 }
             } catch (error) {
                 console.error("Auth error:", error);
-                showToast("Connection error. Ensure your Apps Script URL is correct and updated.", true);
+                showToast(error.message || "Connection error. Ensure your Apps Script URL is correct.", true);
             }
             hideLoader();
         };
@@ -568,6 +576,15 @@
             document.getElementById('app-wrapper').classList.remove('flex');
             document.getElementById('auth-view').classList.remove('hidden');
             document.getElementById('auth-password').value = '';
+            document.getElementById('auth-username').value = ''; // Clear the username field
+            
+            // Force form back to Login mode
+            document.getElementById('auth-is-register').value = 'false';
+            document.getElementById('auth-title').textContent = 'Welcome Back';
+            document.getElementById('auth-submit-btn').textContent = 'Login';
+            document.getElementById('auth-switch-text').textContent = "Don't have an account?";
+            document.getElementById('auth-switch-btn').textContent = 'Create one';
+            
             showToast("Successfully logged out.");
         };
 
@@ -576,33 +593,51 @@
             if (!currentUser) return;
             showLoader("Fetching your trips...");
             try {
-                // Pass username in URL so Apps Script knows whose trips to send
                 const response = await fetch(`${API_URL}?action=getTrips&username=${encodeURIComponent(currentUser)}`);
-                trips = await response.json();
+                const textResponse = await response.text();
+                
+                try {
+                    trips = JSON.parse(textResponse);
+                } catch (parseError) {
+                    console.error("HTML Error received instead of JSON:", textResponse);
+                    throw new Error("Apps Script deployment error. Ensure 'Who has access' is set to 'Anyone'.");
+                }
+                
                 renderDashboardTrips();
             } catch (error) {
                 console.error("Error fetching data:", error);
-                showToast("Could not load trips from the database.", true);
+                showToast(error.message || "Could not load trips from the database.", true);
             }
             hideLoader();
         };
 
         const syncTripToDatabase = async (tripData, isDelete = false) => {
             if (!currentUser) return;
-            // Always append username to the payload to maintain data segregation
             const payload = isDelete 
                 ? { action: 'delete', id: tripData.id, username: currentUser } 
                 : { action: 'save', trip: tripData, username: currentUser };
                 
             try {
-                await fetch(API_URL, {
+                const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 });
+                
+                const textResponse = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(textResponse);
+                } catch (parseError) {
+                    console.error("HTML Error received instead of JSON:", textResponse);
+                    throw new Error("Save failed due to Apps Script deployment settings.");
+                }
+                
+                if(!result.success) throw new Error(result.message);
+                
             } catch (error) {
                 console.error("Error syncing to database:", error);
-                showToast("Failed to save changes.", true);
+                showToast(error.message || "Failed to save changes.", true);
             }
         };
 
