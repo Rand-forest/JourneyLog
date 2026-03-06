@@ -167,6 +167,7 @@
                             <p id="overview-dates" class="text-gray-500 dark:text-gray-400 mt-1 flex items-center">
                                 <i data-lucide="calendar" class="w-4 h-4 mr-2"></i> <span>Dates</span>
                             </p>
+                            <div id="overview-collaborators" class="mt-3"></div>
                         </div>
                         <div id="overview-status-badge"></div>
                     </div>
@@ -859,7 +860,8 @@
                 status: existingTrip ? existingTrip.status : 'upcoming', 
                 flights: existingTrip ? existingTrip.flights || [] : [],
                 itinerary: existingTrip ? existingTrip.itinerary || [] : [],
-                expenses: existingTrip ? existingTrip.expenses || [] : []
+                expenses: existingTrip ? existingTrip.expenses || [] : [],
+                users: existingTrip ? existingTrip.users : currentUser
             };
 
             if (id) {
@@ -886,6 +888,21 @@
             document.getElementById('overview-destination').textContent = trip.destination;
             document.getElementById('overview-dates').innerHTML = `<i data-lucide="calendar" class="w-4 h-4 mr-2"></i> <span>${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}</span>`;
             
+            // Render Collaborators Avatars
+            const collaborators = (trip.users || currentUser).split(',').map(u => u.trim()).filter(Boolean);
+            const avatarsHtml = collaborators.map(user => 
+                `<img class="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100" src="https://ui-avatars.com/api/?name=${user}&background=random&color=fff" title="${user}" alt="${user}">`
+            ).join('');
+
+            document.getElementById('overview-collaborators').innerHTML = `
+                <div class="flex items-center mt-3">
+                    <div class="flex -space-x-2 mr-3">
+                        ${avatarsHtml}
+                    </div>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">${collaborators.length} collaborator${collaborators.length !== 1 ? 's' : ''}</span>
+                </div>
+            `;
+
             const statusSelectHtml = `
                 <select onchange="updateTripStatus(this.value)" class="pl-3 pr-8 py-1.5 text-sm font-medium rounded-full outline-none transition-colors cursor-pointer border ${
                     trip.status === 'completed' 
@@ -1399,6 +1416,13 @@
                 }
                 
                 if (result.success) {
+                    // Update local state to immediately show the new collaborator
+                    const tripToUpdate = trips.find(t => t.id === currentTripId);
+                    if (tripToUpdate) {
+                        const currentUsers = tripToUpdate.users || currentUser;
+                        tripToUpdate.users = currentUsers + ', ' + shareWith;
+                        renderTripOverview(); // Refresh to show new avatar
+                    }
                     showToast(result.message);
                     closeModal('share-modal');
                 } else {
