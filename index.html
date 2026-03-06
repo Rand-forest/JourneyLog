@@ -11,7 +11,6 @@
         tailwind.config = {
             darkMode: 'class',
         }
-        // Early theme check to prevent flash of unstyled content
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
@@ -31,7 +30,6 @@
         .show-modal { opacity: 1; pointer-events: auto; }
         .show-modal .modal-content { transform: scale(1); opacity: 1; }
         
-        /* Custom timeline line for itinerary */
         .timeline-line::before {
             content: '';
             position: absolute;
@@ -45,6 +43,13 @@
         }
         html.dark .timeline-line::before { background-color: #374151; }
         .timeline-item:last-child .timeline-line::before { display: none; }
+        
+        /* Toast animation */
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast-animate { animation: slideUp 0.3s ease-out forwards; }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col transition-colors duration-300">
@@ -55,162 +60,202 @@
         <p id="loader-text" class="text-lg font-medium text-gray-800 dark:text-gray-200">Loading...</p>
     </div>
 
-    <!-- Navigation -->
-    <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-100 dark:border-gray-700 sticky top-0 z-30 transition-colors duration-300">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80" onclick="goBackToDashboard()">
-                    <i data-lucide="plane" class="text-blue-600 dark:text-blue-400 h-6 w-6"></i>
-                    <span class="font-bold text-xl tracking-tight text-gray-900 dark:text-white">JourneyLog</span>
-                </div>
-                <div class="flex items-center gap-3">
-                    <!-- Theme Toggle Button -->
-                    <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5 transition-colors">
-                        <i id="theme-toggle-dark-icon" data-lucide="moon" class="hidden w-5 h-5"></i>
-                        <i id="theme-toggle-light-icon" data-lucide="sun" class="hidden w-5 h-5"></i>
-                    </button>
-                    <img class="h-8 w-8 rounded-full border border-gray-200 dark:border-gray-600" src="https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff" alt="User avatar">
-                </div>
-            </div>
-        </div>
-    </nav>
+    <!-- Message Toast -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-[110] hidden flex-col gap-2"></div>
 
-    <!-- Main Content Area -->
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
-        
-        <!-- ========================================== -->
-        <!-- VIEW 1: DASHBOARD (List of Trips)          -->
-        <!-- ========================================== -->
-        <div id="dashboard-view" class="block">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
+    <!-- ========================================== -->
+    <!-- AUTHENTICATION VIEW                        -->
+    <!-- ========================================== -->
+    <div id="auth-view" class="flex flex-col items-center justify-center min-h-screen p-4 absolute inset-0 bg-gray-50 dark:bg-gray-900 z-50">
+        <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-8">
+            <div class="flex items-center justify-center gap-2 mb-8">
+                <i data-lucide="plane" class="text-blue-600 dark:text-blue-400 h-8 w-8"></i>
+                <span class="font-bold text-3xl tracking-tight text-gray-900 dark:text-white">JourneyLog</span>
+            </div>
+            
+            <h2 id="auth-title" class="text-xl font-bold text-gray-900 dark:text-white mb-6 text-center">Welcome Back</h2>
+            
+            <form id="auth-form" class="space-y-5" onsubmit="handleAuth(event)">
+                <input type="hidden" id="auth-is-register" value="false">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">My Trips</h1>
-                    <p class="text-gray-500 dark:text-gray-400 mt-1">Manage and plan your upcoming adventures.</p>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+                    <input type="text" id="auth-username" required placeholder="Enter your username" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white outline-none transition-shadow">
                 </div>
-                <button onclick="openTripModal()" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
-                    <i data-lucide="plus" class="w-5 h-5"></i>
-                    Add New Trip
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                    <input type="password" id="auth-password" required placeholder="••••••••" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white outline-none transition-shadow">
+                </div>
+                <button type="submit" id="auth-submit-btn" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 focus:ring-blue-500 transition-colors mt-2">
+                    Login
                 </button>
-            </div>
-            <div id="trips-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
-            <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center">
-                <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-full mb-4"><i data-lucide="map" class="w-12 h-12 text-blue-500 dark:text-blue-400"></i></div>
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white">No trips planned yet</h3>
-                <p class="text-gray-500 dark:text-gray-400 mt-1 max-w-sm">Click the "Add New Trip" button to start organizing your next adventure.</p>
+            </form>
+            
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    <span id="auth-switch-text">Don't have an account?</span>
+                    <button onclick="toggleAuthMode()" id="auth-switch-btn" class="font-medium text-blue-600 dark:text-blue-400 hover:underline ml-1">Create one</button>
+                </p>
             </div>
         </div>
+    </div>
 
-        <!-- ========================================== -->
-        <!-- VIEW 2: TRIP OVERVIEW (Summary Cards)      -->
-        <!-- ========================================== -->
-        <div id="trip-overview-view" class="hidden flex-col h-full min-h-[calc(100vh-8rem)]">
-            <div class="mb-8">
-                <button onclick="goBackToDashboard()" class="inline-flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-4 group">
+    <!-- Application Wrapper (Hidden until logged in) -->
+    <div id="app-wrapper" class="hidden flex-col min-h-screen">
+        <!-- Navigation -->
+        <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-100 dark:border-gray-700 sticky top-0 z-30 transition-colors duration-300">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16 items-center">
+                    <div class="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80" onclick="goBackToDashboard()">
+                        <i data-lucide="plane" class="text-blue-600 dark:text-blue-400 h-6 w-6"></i>
+                        <span class="font-bold text-xl tracking-tight text-gray-900 dark:text-white">JourneyLog</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <!-- Theme Toggle Button -->
+                        <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none rounded-lg text-sm p-2 transition-colors">
+                            <i id="theme-toggle-dark-icon" data-lucide="moon" class="hidden w-5 h-5"></i>
+                            <i id="theme-toggle-light-icon" data-lucide="sun" class="hidden w-5 h-5"></i>
+                        </button>
+                        <div class="flex items-center gap-2 border-l border-gray-200 dark:border-gray-700 pl-4">
+                            <span id="nav-username" class="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:block">User</span>
+                            <img class="h-8 w-8 rounded-full border border-gray-200 dark:border-gray-600 bg-gray-100" src="https://ui-avatars.com/api/?name=U&background=0D8ABC&color=fff" id="nav-avatar" alt="User avatar">
+                            <button onclick="logout()" class="ml-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 p-1 rounded-md transition-colors" title="Logout">
+                                <i data-lucide="log-out" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+            
+            <!-- ========================================== -->
+            <!-- VIEW 1: DASHBOARD (List of Trips)          -->
+            <!-- ========================================== -->
+            <div id="dashboard-view" class="block">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">My Trips</h1>
+                        <p class="text-gray-500 dark:text-gray-400 mt-1">Manage and plan your upcoming adventures.</p>
+                    </div>
+                    <button onclick="openTripModal()" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                        Add New Trip
+                    </button>
+                </div>
+                <div id="trips-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+                <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center">
+                    <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-full mb-4"><i data-lucide="map" class="w-12 h-12 text-blue-500 dark:text-blue-400"></i></div>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">No trips planned yet</h3>
+                    <p class="text-gray-500 dark:text-gray-400 mt-1 max-w-sm">Click the "Add New Trip" button to start organizing your next adventure.</p>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- VIEW 2: TRIP OVERVIEW (Summary Cards)      -->
+            <!-- ========================================== -->
+            <div id="trip-overview-view" class="hidden flex-col h-full min-h-[calc(100vh-8rem)]">
+                <div class="mb-8">
+                    <button onclick="goBackToDashboard()" class="inline-flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-4 group">
+                        <i data-lucide="arrow-left" class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform"></i>
+                        Back to all trips
+                    </button>
+                    <div class="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+                        <div>
+                            <h1 id="overview-destination" class="text-3xl font-bold text-gray-900 dark:text-white">Destination</h1>
+                            <p id="overview-dates" class="text-gray-500 dark:text-gray-400 mt-1 flex items-center">
+                                <i data-lucide="calendar" class="w-4 h-4 mr-2"></i> <span>Dates</span>
+                            </p>
+                        </div>
+                        <div id="overview-status-badge"></div>
+                    </div>
+                </div>
+
+                <!-- The 3 Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div onclick="viewCategory('flights')" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 cursor-pointer hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-blue-300 dark:hover:border-blue-500 transition-all text-center group">
+                        <div class="w-16 h-16 mx-auto bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                            <i data-lucide="plane" class="w-8 h-8"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Flights</h2>
+                        <p id="summary-flights" class="text-gray-500 dark:text-gray-400 mt-2 font-medium">0 booked</p>
+                    </div>
+
+                    <div onclick="viewCategory('itinerary')" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 cursor-pointer hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-amber-300 dark:hover:border-amber-500 transition-all text-center group">
+                        <div class="w-16 h-16 mx-auto bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                            <i data-lucide="map-pin" class="w-8 h-8"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Itinerary</h2>
+                        <p id="summary-itinerary" class="text-gray-500 dark:text-gray-400 mt-2 font-medium">0 activities</p>
+                    </div>
+
+                    <div onclick="viewCategory('expenses')" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 cursor-pointer hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-emerald-300 dark:hover:border-emerald-500 transition-all text-center group">
+                        <div class="w-16 h-16 mx-auto bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                            <i data-lucide="dollar-sign" class="w-8 h-8"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Expenses</h2>
+                        <p id="summary-expenses" class="text-gray-500 dark:text-gray-400 mt-2 font-medium">SGD$0.00 spent</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- VIEW 3: CATEGORY DETAILS                   -->
+            <!-- ========================================== -->
+            <div id="category-details-view" class="hidden flex-col h-full min-h-[calc(100vh-8rem)]">
+                <button onclick="goBackToTripOverview()" class="inline-flex items-center w-fit text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-6 group">
                     <i data-lucide="arrow-left" class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform"></i>
-                    Back to all trips
+                    <span id="category-back-text">Back to Trip Overview</span>
                 </button>
-                <div class="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
-                    <div>
-                        <h1 id="overview-destination" class="text-3xl font-bold text-gray-900 dark:text-white">Destination</h1>
-                        <p id="overview-dates" class="text-gray-500 dark:text-gray-400 mt-1 flex items-center">
-                            <i data-lucide="calendar" class="w-4 h-4 mr-2"></i> <span>Dates</span>
-                        </p>
+                
+                <div class="flex justify-between items-center mb-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div class="flex items-center gap-4">
+                        <div id="category-header-icon" class="p-3 rounded-xl"></div>
+                        <div>
+                            <h2 id="category-header-title" class="text-2xl font-bold text-gray-900 dark:text-white">Category</h2>
+                            <p id="category-header-subtitle" class="text-gray-500 dark:text-gray-400 text-sm">Manage items</p>
+                        </div>
                     </div>
-                    <!-- Editable Status Dropdown injects here -->
-                    <div id="overview-status-badge"></div>
+                    <button id="add-item-btn" class="inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                        <span id="add-item-text" class="hidden sm:inline">Add Item</span>
+                    </button>
                 </div>
+
+                <div id="category-content-container" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6"></div>
             </div>
 
-            <!-- The 3 Summary Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Flights Card -->
-                <div onclick="viewCategory('flights')" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 cursor-pointer hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-blue-300 dark:hover:border-blue-500 transition-all text-center group">
-                    <div class="w-16 h-16 mx-auto bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                        <i data-lucide="plane" class="w-8 h-8"></i>
-                    </div>
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Flights</h2>
-                    <p id="summary-flights" class="text-gray-500 dark:text-gray-400 mt-2 font-medium">0 booked</p>
-                </div>
-
-                <!-- Itinerary Card -->
-                <div onclick="viewCategory('itinerary')" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 cursor-pointer hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-amber-300 dark:hover:border-amber-500 transition-all text-center group">
-                    <div class="w-16 h-16 mx-auto bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                        <i data-lucide="map-pin" class="w-8 h-8"></i>
-                    </div>
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Itinerary</h2>
-                    <p id="summary-itinerary" class="text-gray-500 dark:text-gray-400 mt-2 font-medium">0 activities</p>
-                </div>
-
-                <!-- Expenses Card -->
-                <div onclick="viewCategory('expenses')" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 cursor-pointer hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-emerald-300 dark:hover:border-emerald-500 transition-all text-center group">
-                    <div class="w-16 h-16 mx-auto bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                        <i data-lucide="dollar-sign" class="w-8 h-8"></i>
-                    </div>
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Expenses</h2>
-                    <p id="summary-expenses" class="text-gray-500 dark:text-gray-400 mt-2 font-medium">SGD$0.00 spent</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- VIEW 3: CATEGORY DETAILS                   -->
-        <!-- ========================================== -->
-        <div id="category-details-view" class="hidden flex-col h-full min-h-[calc(100vh-8rem)]">
-            <button onclick="goBackToTripOverview()" class="inline-flex items-center w-fit text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-6 group">
-                <i data-lucide="arrow-left" class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform"></i>
-                <span id="category-back-text">Back to Trip Overview</span>
-            </button>
-            
-            <div class="flex justify-between items-center mb-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <div class="flex items-center gap-4">
-                    <div id="category-header-icon" class="p-3 rounded-xl"></div>
-                    <div>
-                        <h2 id="category-header-title" class="text-2xl font-bold text-gray-900 dark:text-white">Category</h2>
-                        <p id="category-header-subtitle" class="text-gray-500 dark:text-gray-400 text-sm">Manage items</p>
-                    </div>
-                </div>
-                <button id="add-item-btn" class="inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
-                    <i data-lucide="plus" class="w-5 h-5"></i>
-                    <span id="add-item-text" class="hidden sm:inline">Add Item</span>
+            <!-- ========================================== -->
+            <!-- VIEW 4: DAY DETAILS (Itinerary Level 2)    -->
+            <!-- ========================================== -->
+            <div id="day-details-view" class="hidden flex-col h-full min-h-[calc(100vh-8rem)]">
+                <button onclick="goBackToItinerary()" class="inline-flex items-center w-fit text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors mb-6 group">
+                    <i data-lucide="arrow-left" class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform"></i>
+                    <span>Back to Itinerary Overview</span>
                 </button>
-            </div>
-
-            <div id="category-content-container" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-                <!-- List renders here -->
-            </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- VIEW 4: DAY DETAILS (Itinerary Level 2)    -->
-        <!-- ========================================== -->
-        <div id="day-details-view" class="hidden flex-col h-full min-h-[calc(100vh-8rem)]">
-            <button onclick="goBackToItinerary()" class="inline-flex items-center w-fit text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors mb-6 group">
-                <i data-lucide="arrow-left" class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform"></i>
-                <span>Back to Itinerary Overview</span>
-            </button>
-            
-            <div class="flex justify-between items-center mb-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <div class="flex items-center gap-4">
-                    <div class="p-3 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
-                        <i data-lucide="calendar-clock" class="w-6 h-6"></i>
+                
+                <div class="flex justify-between items-center mb-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                            <i data-lucide="calendar-clock" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h2 id="day-header-title" class="text-2xl font-bold text-gray-900 dark:text-white">Day X</h2>
+                            <p id="day-header-subtitle" class="text-gray-500 dark:text-gray-400 text-sm">Date</p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 id="day-header-title" class="text-2xl font-bold text-gray-900 dark:text-white">Day X</h2>
-                        <p id="day-header-subtitle" class="text-gray-500 dark:text-gray-400 text-sm">Date</p>
-                    </div>
+                    <button onclick="openItineraryModal()" class="inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 bg-amber-600 hover:bg-amber-700 focus:ring-amber-500 dark:focus:ring-offset-gray-900">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                        <span class="hidden sm:inline">Add Activity</span>
+                    </button>
                 </div>
-                <button onclick="openItineraryModal()" class="inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 bg-amber-600 hover:bg-amber-700 focus:ring-amber-500 dark:focus:ring-offset-gray-900">
-                    <i data-lucide="plus" class="w-5 h-5"></i>
-                    <span class="hidden sm:inline">Add Activity</span>
-                </button>
+
+                <div id="day-content-container" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6"></div>
             </div>
 
-            <div id="day-content-container" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-                <!-- List renders here -->
-            </div>
-        </div>
-
-    </main>
+        </main>
+    </div> <!-- End App Wrapper -->
 
     <!-- ========================================== -->
     <!-- MODALS                                     -->
@@ -391,7 +436,6 @@
         const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
         const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
 
-        // Set initial icon state based on active class
         if (document.documentElement.classList.contains('dark')) {
             themeToggleLightIcon.classList.remove('hidden');
         } else {
@@ -415,17 +459,17 @@
         // --- API & State Management ---
         const API_URL = "https://script.google.com/macros/s/AKfycbybx4GaX7i8YIbRDoOpboA_U_5okOJGo48Pm82HRMLiAmdj_2R02fE529a_G52k9DOj/exec";
         
-        let trips = []; // Now starts empty, populated from Google Sheets
-        
+        let trips = []; 
         let currentTripId = null;
         let currentCategory = null; 
         let currentDayDate = null;  
         let currentDayNumber = null;
         let deleteTarget = { type: null, id: null }; 
+        let currentUser = null; // Track logged-in user
 
         lucide.createIcons();
 
-        // --- Loading UI ---
+        // --- Toast & Loader UI ---
         const showLoader = (text = 'Loading...') => {
             document.getElementById('loader-text').textContent = text;
             document.getElementById('global-loader').classList.remove('hidden');
@@ -434,30 +478,131 @@
             document.getElementById('global-loader').classList.add('hidden');
         };
 
-        // --- Database Sync Functions ---
-        const fetchTripsFromDatabase = async () => {
-            showLoader("Fetching your trips...");
+        const showToast = (message, isError = false) => {
+            const container = document.getElementById('toast-container');
+            container.classList.remove('hidden');
+            
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2 toast-animate ${
+                isError ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-green-100 text-green-800 border border-green-200'
+            }`;
+            
+            const icon = isError ? '<i data-lucide="alert-circle" class="w-4 h-4"></i>' : '<i data-lucide="check-circle" class="w-4 h-4"></i>';
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        };
+
+        // --- Auth Logic ---
+        const toggleAuthMode = () => {
+            const isRegister = document.getElementById('auth-is-register');
+            const title = document.getElementById('auth-title');
+            const submitBtn = document.getElementById('auth-submit-btn');
+            const switchText = document.getElementById('auth-switch-text');
+            const switchBtn = document.getElementById('auth-switch-btn');
+
+            if (isRegister.value === 'false') {
+                isRegister.value = 'true';
+                title.textContent = 'Create Account';
+                submitBtn.textContent = 'Register';
+                switchText.textContent = 'Already have an account?';
+                switchBtn.textContent = 'Login here';
+            } else {
+                isRegister.value = 'false';
+                title.textContent = 'Welcome Back';
+                submitBtn.textContent = 'Login';
+                switchText.textContent = "Don't have an account?";
+                switchBtn.textContent = 'Create one';
+            }
+        };
+
+        const handleAuth = async (e) => {
+            e.preventDefault();
+            const isRegister = document.getElementById('auth-is-register').value === 'true';
+            const username = document.getElementById('auth-username').value.trim();
+            const password = document.getElementById('auth-password').value.trim();
+
+            if (!username || !password) return;
+
+            showLoader(isRegister ? "Creating account..." : "Authenticating...");
+
             try {
-                const response = await fetch(API_URL);
-                trips = await response.json();
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: isRegister ? 'register' : 'login', username, password })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    currentUser = username;
+                    document.getElementById('nav-username').textContent = username;
+                    document.getElementById('nav-avatar').src = `https://ui-avatars.com/api/?name=${username}&background=0D8ABC&color=fff`;
+                    
+                    document.getElementById('auth-view').classList.add('hidden');
+                    document.getElementById('app-wrapper').classList.remove('hidden');
+                    document.getElementById('app-wrapper').classList.add('flex');
+                    
+                    showToast(result.message);
+                    fetchTripsFromDatabase(); // Fetch only this user's trips
+                } else {
+                    showToast(result.message, true);
+                }
             } catch (error) {
-                console.error("Error fetching data:", error);
-                alert("Could not load trips from the database. Please check your connection.");
+                console.error("Auth error:", error);
+                showToast("Connection error. Ensure your Apps Script URL is correct and updated.", true);
             }
             hideLoader();
-            renderDashboardTrips();
+        };
+
+        const logout = () => {
+            currentUser = null;
+            trips = [];
+            document.getElementById('app-wrapper').classList.add('hidden');
+            document.getElementById('app-wrapper').classList.remove('flex');
+            document.getElementById('auth-view').classList.remove('hidden');
+            document.getElementById('auth-password').value = '';
+            showToast("Successfully logged out.");
+        };
+
+        // --- Database Sync Functions ---
+        const fetchTripsFromDatabase = async () => {
+            if (!currentUser) return;
+            showLoader("Fetching your trips...");
+            try {
+                // Pass username in URL so Apps Script knows whose trips to send
+                const response = await fetch(`${API_URL}?action=getTrips&username=${encodeURIComponent(currentUser)}`);
+                trips = await response.json();
+                renderDashboardTrips();
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                showToast("Could not load trips from the database.", true);
+            }
+            hideLoader();
         };
 
         const syncTripToDatabase = async (tripData, isDelete = false) => {
-            const payload = isDelete ? { action: 'delete', id: tripData.id } : { action: 'save', trip: tripData };
+            if (!currentUser) return;
+            // Always append username to the payload to maintain data segregation
+            const payload = isDelete 
+                ? { action: 'delete', id: tripData.id, username: currentUser } 
+                : { action: 'save', trip: tripData, username: currentUser };
+                
             try {
                 await fetch(API_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Prevents CORS preflight issues
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 });
             } catch (error) {
                 console.error("Error syncing to database:", error);
+                showToast("Failed to save changes.", true);
             }
         };
 
@@ -471,7 +616,6 @@
             await syncTripToDatabase(trip);
             hideLoader();
             
-            // Re-render overview to update the dropdown's appearance
             renderTripOverview();
         };
 
@@ -500,7 +644,6 @@
                 upcoming: '<span class="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800">Upcoming</span>',
                 completed: '<span class="px-3 py-1 text-sm font-medium rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800">Completed</span>'
             };
-            // Default to upcoming if undefined
             return badges[status] || badges['upcoming'];
         };
 
@@ -574,7 +717,6 @@
             renderCategoryDetails();
         };
 
-        // --- Modals General Setup ---
         const openModal = (id) => { document.getElementById(id).classList.remove('hide-modal'); document.getElementById(id).classList.add('show-modal'); };
         const closeModal = (id) => { document.getElementById(id).classList.remove('show-modal'); document.getElementById(id).classList.add('hide-modal'); if (id === 'delete-modal') deleteTarget = { type: null, id: null }; };
 
@@ -593,21 +735,13 @@
             [...trips].sort((a, b) => {
                 const isACompleted = a.status === 'completed';
                 const isBCompleted = b.status === 'completed';
-                
                 if (isACompleted && !isBCompleted) return 1;
                 if (!isACompleted && isBCompleted) return -1;
-                
-                if (isACompleted) {
-                    return new Date(b.startDate) - new Date(a.startDate);
-                } else {
-                    return new Date(a.startDate) - new Date(b.startDate);
-                }
+                if (isACompleted) return new Date(b.startDate) - new Date(a.startDate);
+                return new Date(a.startDate) - new Date(b.startDate);
             }).forEach(trip => {
-                // Smart Image Fetcher: Extracts the first word (city) from the destination
                 const locationName = trip.destination.split(',')[0].trim();
                 const searchKeyword = encodeURIComponent(locationName || 'travel');
-                
-                // Uses a free image service that returns a picture based on the keyword
                 const dynamicImage = `https://loremflickr.com/600/400/${searchKeyword},landmark/all`;
                 const imgUrl = trip.imageUrl || dynamicImage;
 
@@ -639,8 +773,8 @@
                 const trip = trips.find(t => t.id === id);
                 document.getElementById('trip-id').value = trip.id;
                 document.getElementById('trip-destination').value = trip.destination;
-                document.getElementById('trip-start-date').value = trip.startDate.split('T')[0]; // Format for input
-                document.getElementById('trip-end-date').value = trip.endDate.split('T')[0]; // Format for input
+                document.getElementById('trip-start-date').value = trip.startDate.split('T')[0]; 
+                document.getElementById('trip-end-date').value = trip.endDate.split('T')[0]; 
                 document.getElementById('trip-image-url').value = trip.imageUrl;
             } else {
                 document.getElementById('trip-modal-title').textContent = 'Add New Trip';
@@ -664,7 +798,7 @@
                 startDate: document.getElementById('trip-start-date').value,
                 endDate: document.getElementById('trip-end-date').value,
                 imageUrl: document.getElementById('trip-image-url').value,
-                status: existingTrip ? existingTrip.status : 'upcoming', // Default new trips to upcoming
+                status: existingTrip ? existingTrip.status : 'upcoming', 
                 flights: existingTrip ? existingTrip.flights || [] : [],
                 itinerary: existingTrip ? existingTrip.itinerary || [] : [],
                 expenses: existingTrip ? existingTrip.expenses || [] : []
@@ -694,7 +828,6 @@
             document.getElementById('overview-destination').textContent = trip.destination;
             document.getElementById('overview-dates').innerHTML = `<i data-lucide="calendar" class="w-4 h-4 mr-2"></i> <span>${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}</span>`;
             
-            // Editable Status Dropdown injects here
             const statusSelectHtml = `
                 <select onchange="updateTripStatus(this.value)" class="pl-3 pr-8 py-1.5 text-sm font-medium rounded-full outline-none transition-colors cursor-pointer border ${
                     trip.status === 'completed' 
@@ -1059,14 +1192,13 @@
             await syncTripToDatabase(trip);
             hideLoader();
             
-            // Re-render updates the totals and all expenses linked to the nominal rate dynamically
             renderCategoryDetails(); 
         };
 
         const calculateSGD = () => {
             const amount = parseFloat(document.getElementById('expense-amount').value) || 0;
             const rate = parseFloat(document.getElementById('expense-rate').value) || 0;
-            const validRate = rate > 0 ? rate : 1; // Prevent division by zero
+            const validRate = rate > 0 ? rate : 1; 
             const sgd = amount / validRate;
             document.getElementById('expense-sgd-calc').textContent = `SGD$ ${sgd.toFixed(2)}`;
         };
@@ -1100,7 +1232,7 @@
                 document.getElementById('expense-desc').value = e.description; 
                 document.getElementById('expense-amount').value = e.amount;
                 
-                const useNominal = e.useNominal !== false; // defaults to true
+                const useNominal = e.useNominal !== false; 
                 document.getElementById('expense-use-nominal').checked = useNominal;
                 document.getElementById('expense-rate').value = useNominal ? nominalRate : (e.rate || 1.00);
             } else { 
@@ -1109,7 +1241,7 @@
                 document.getElementById('expense-use-nominal').checked = true;
                 document.getElementById('expense-rate').value = nominalRate;
             }
-            toggleNominalRate(); // Ensure the input is greyed out appropriately
+            toggleNominalRate();
             openModal('expense-modal');
         };
 
@@ -1151,7 +1283,7 @@
 
             if (type === 'trip') { 
                 trips = trips.filter(t => t.id !== id); 
-                await syncTripToDatabase({ id: id }, true); // True marks it as a delete action
+                await syncTripToDatabase({ id: id }, true); 
                 renderDashboardTrips(); 
             } 
             else if (currentTripId) {
@@ -1171,10 +1303,6 @@
             hideLoader();
             closeModal('delete-modal');
         };
-
-        // --- App Initialization ---
-        // Fetch real data on load instead of rendering dummy data
-        fetchTripsFromDatabase();
 
     </script>
 </body>
