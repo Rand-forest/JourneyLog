@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Itineraries</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .modal-overlay { transition: opacity 0.2s ease-out; }
+        .modal-content { transition: transform 0.2s ease-out, opacity 0.2s ease-out; }
+        .hide-modal { opacity: 0; pointer-events: none; }
+        .hide-modal .modal-content { transform: scale(0.95); opacity: 0; }
+        .show-modal { opacity: 1; pointer-events: auto; }
+        .show-modal .modal-content { transform: scale(1); opacity: 1; }
+        
+        /* Custom timeline line for itinerary */
+        .timeline-line::before {
+            content: '';
+            position: absolute;
+            left: 23px;
+            top: 40px;
+            bottom: -10px;
+            width: 2px;
+            background-color: #e5e7eb;
+            z-index: 0;
+        }
+        .timeline-item:last-child .timeline-line::before { display: none; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+
+    <!-- Global Loader Overlay -->
+    <div id="global-loader" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm hidden">
+        <i data-lucide="loader-2" class="w-12 h-12 text-blue-600 animate-spin mb-4"></i>
+        <p id="loader-text" class="text-lg font-medium text-gray-800">Loading...</p>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80" onclick="goBackToDashboard()">
+                    <i data-lucide="plane" class="text-blue-600 h-6 w-6"></i>
+                    <span class="font-bold text-xl tracking-tight text-gray-900">JourneyLog</span>
+                </div>
+                <div class="flex items-center">
+                    <img class="h-8 w-8 rounded-full border border-gray-200" src="https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff" alt="User avatar">
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+        
+        <!-- ========================================== -->
+        <!-- VIEW 1: DASHBOARD (List of Trips)          -->
+        <!-- ========================================== -->
+        <div id="dashboard-view" class="block">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">My Trips</h1>
+                    <p class="text-gray-500 mt-1">Manage and plan your upcoming adventures.</p>
+                </div>
+                <button onclick="openTripModal()" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                    Add New Trip
+                </button>
+            </div>
+            <div id="trips-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+            <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center">
+                <div class="bg-blue-50 p-4 rounded-full mb-4"><i data-lucide="map" class="w-12 h-12 text-blue-500"></i></div>
+                <h3 class="text-lg font-medium text-gray-900">No trips planned yet</h3>
+                <p class="text-gray-500 mt-1 max-w-sm">Click the "Add New Trip" button to start organizing your next adventure.</p>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW 2: TRIP OVERVIEW (Summary Cards)      -->
+        <!-- ========================================== -->
+        <div id="trip-overview-view" class="hidden flex-col h-full min-h-[calc(100vh-8rem)]">
+            <div class="mb-8">
+                <button onclick="goBackToDashboard()" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors mb-4 group">
+                    <i data-lucide="arrow-left" class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform"></i>
+                    Back to all trips
+                </button>
+                <div class="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+                    <div>
+                        <h1 id="overview-destination" class="text-3xl font-bold text-gray-900">Destination</h1>
+                        <p id="overview-dates" class="text-gray-500 mt-1 flex items-center">
+                            <i data-lucide="calendar" class="w-4 h-4 mr-2"></i> <span>Dates</span>
+                        </p>
+                    </div>
+                    <div id="overview-status-badge"></div>
+                </div>
+            </div>
+
+            <!-- The 3 Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Flights Card -->
+                <div onclick="viewCategory('flights')" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all text-center group">
+                    <div class="w-16 h-16 mx-auto bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                        <i data-lucide="plane" class="w-8 h-8"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-900">Flights</h2>
+                    <p id="summary-flights" class="text-gray-500 mt-2 font-medium">0 booked</p>
+                </div>
+
+                <!-- Itinerary Card -->
+                <div onclick="viewCategory('itinerary')" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 cursor-pointer hover:shadow-md hover:border-amber-300 transition-all text-center group">
+                    <div class="w-16 h-16 mx-auto bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                        <i data-lucide="map-pin" class="w-8 h-8"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-900">Itinerary</h2>
+                    <p id="summary-itinerary" class="text-gray-500 mt-2 font-medium">0 activities</p>
+                </div>
+
+                <!-- Expenses Card -->
+                <div onclick="viewCategory('expenses')" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 cursor-pointer hover:shadow-md hover:border-emerald-300 transition-all text-center group">
+                    <div class="w-16 h-16 mx-auto bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                        <i data-lucide="dollar-sign" class="w-8 h-8"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-900">Expenses</h2>
+                    <p id="summary-expenses" class="text-gray-500 mt-2 font-medium">$0.00 spent</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW 3: CATEGORY DETAILS                   -->
+        <!-- ========================================== -->
+        <div id="category-details-view" class="hidden flex-col h-full min-h-[calc(100vh-8rem)]">
+            <button onclick="goBackToTripOverview()" class="inline-flex items-center w-fit text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors mb-6 group">
+                <i data-lucide="arrow-left" class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform"></i>
+                <span id="category-back-text">Back to Trip Overview</span>
+            </button>
+            
+            <div class="flex justify-between items-center mb-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div class="flex items-center gap-4">
+                    <div id="category-header-icon" class="p-3 rounded-xl"></div>
+                    <div>
+                        <h2 id="category-header-title" class="text-2xl font-bold text-gray-900">Category</h2>
+                        <p id="category-header-subtitle" class="text-gray-500 text-sm">Manage items</p>
+                    </div>
+                </div>
+                <button id="add-item-btn" class="inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                    <span id="add-item-text" class="hidden sm:inline">Add Item</span>
+                </button>
+            </div>
+
+            <div id="category-content-container" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <!-- List renders here -->
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW 4: DAY DETAILS (Itinerary Level 2)    -->
+        <!-- ========================================== -->
+        <div id="day-details-view" class="hidden flex-col h-full min-h-[calc(100vh-8rem)]">
+            <button onclick="goBackToItinerary()" class="inline-flex items-center w-fit text-sm font-medium text-gray-500 hover:text-amber-600 transition-colors mb-6 group">
+                <i data-lucide="arrow-left" class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform"></i>
+                <span>Back to Itinerary Overview</span>
+            </button>
+            
+            <div class="flex justify-between items-center mb-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 rounded-xl bg-amber-100 text-amber-600">
+                        <i data-lucide="calendar-clock" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h2 id="day-header-title" class="text-2xl font-bold text-gray-900">Day X</h2>
+                        <p id="day-header-subtitle" class="text-gray-500 text-sm">Date</p>
+                    </div>
+                </div>
+                <button onclick="openItineraryModal()" class="inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 bg-amber-600 hover:bg-amber-700 focus:ring-amber-500">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                    <span class="hidden sm:inline">Add Activity</span>
+                </button>
+            </div>
+
+            <div id="day-content-container" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <!-- List renders here -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ========================================== -->
+    <!-- MODALS                                     -->
+    <!-- ========================================== -->
+
+    <!-- Trip Modal -->
+    <div id="trip-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden modal-content flex flex-col max-h-[90vh]">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <h3 id="trip-modal-title" class="text-lg font-semibold text-gray-900">Add New Trip</h3>
+                <button onclick="closeModal('trip-modal')" class="text-gray-400 hover:text-gray-600 rounded-full p-1 hover:bg-gray-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <form id="trip-form" class="space-y-4">
+                    <input type="hidden" id="trip-id">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+                        <input type="text" id="trip-destination" required placeholder="e.g., Kyoto, Japan" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                            <input type="date" id="trip-start-date" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                            <input type="date" id="trip-end-date" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Cover Image URL (Optional)</label>
+                        <input type="url" id="trip-image-url" placeholder="https://example.com/image.jpg" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="trip-status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white">
+                            <option value="planning">Planning</option>
+                            <option value="upcoming">Upcoming</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 mt-auto">
+                <button type="button" onclick="closeModal('trip-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="button" onclick="saveTrip()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Save Trip</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flight Modal -->
+    <div id="flight-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden modal-content">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <h3 id="flight-modal-title" class="text-lg font-semibold text-gray-900">Add Flight</h3>
+                <button onclick="closeModal('flight-modal')" class="text-gray-400 hover:text-gray-600 rounded-full p-1 hover:bg-gray-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6">
+                <form id="flight-form" class="space-y-4">
+                    <input type="hidden" id="flight-id">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Airline & Flight #</label>
+                        <input type="text" id="flight-airline" required placeholder="e.g., Delta DL123" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Departure</label>
+                            <input type="datetime-local" id="flight-departure" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Arrival</label>
+                            <input type="datetime-local" id="flight-arrival" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+                        <textarea id="flight-notes" rows="2" placeholder="Booking Ref, Terminal, Gate, etc." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                <button type="button" onclick="closeModal('flight-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="button" onclick="saveFlight()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Itinerary Modal -->
+    <div id="itinerary-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden modal-content">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <h3 id="itinerary-modal-title" class="text-lg font-semibold text-gray-900">Add Activity</h3>
+                <button onclick="closeModal('itinerary-modal')" class="text-gray-400 hover:text-gray-600 rounded-full p-1 hover:bg-gray-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6">
+                <form id="itinerary-form" class="space-y-4">
+                    <input type="hidden" id="itinerary-id">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Activity / Location</label>
+                        <input type="text" id="itinerary-activity" required placeholder="e.g., Visit Louvre Museum" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
+                        <input type="datetime-local" id="itinerary-time" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+                        <textarea id="itinerary-notes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                <button type="button" onclick="closeModal('itinerary-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="button" onclick="saveItinerary()" class="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expense Modal -->
+    <div id="expense-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden modal-content">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <h3 id="expense-modal-title" class="text-lg font-semibold text-gray-900">Add Expense</h3>
+                <button onclick="closeModal('expense-modal')" class="text-gray-400 hover:text-gray-600 rounded-full p-1 hover:bg-gray-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6">
+                <form id="expense-form" class="space-y-4">
+                    <input type="hidden" id="expense-id">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <input type="text" id="expense-desc" required placeholder="e.g., Dinner at Cafe" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                        <input type="number" id="expense-amount" step="0.01" min="0" required placeholder="0.00" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                <button type="button" onclick="closeModal('expense-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="button" onclick="saveExpense()" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Delete Modal -->
+    <div id="delete-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden modal-content">
+            <div class="p-6 text-center">
+                <div class="w-12 h-12 rounded-full bg-red-100 mx-auto flex items-center justify-center mb-4"><i data-lucide="alert-triangle" class="w-6 h-6 text-red-600"></i></div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Delete Item?</h3>
+                <p class="text-sm text-gray-500">Are you sure you want to delete this? This action cannot be undone.</p>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-center gap-3">
+                <button onclick="closeModal('delete-modal')" class="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button onclick="confirmDelete()" class="w-full px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- API & State Management ---
+        const API_URL = "https://script.google.com/macros/s/AKfycbybx4GaX7i8YIbRDoOpboA_U_5okOJGo48Pm82HRMLiAmdj_2R02fE529a_G52k9DOj/exec";
+        
+        let trips = []; // Now starts empty, populated from Google Sheets
+        
+        let currentTripId = null;
+        let currentCategory = null; 
+        let currentDayDate = null;  
+        let currentDayNumber = null;
+        let deleteTarget = { type: null, id: null }; 
+
+        lucide.createIcons();
+
+        // --- Loading UI ---
+        const showLoader = (text = 'Loading...') => {
+            document.getElementById('loader-text').textContent = text;
+            document.getElementById('global-loader').classList.remove('hidden');
+        };
+        const hideLoader = () => {
+            document.getElementById('global-loader').classList.add('hidden');
+        };
+
+        // --- Database Sync Functions ---
+        const fetchTripsFromDatabase = async () => {
+            showLoader("Fetching your trips...");
+            try {
+                const response = await fetch(API_URL);
+                trips = await response.json();
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                alert("Could not load trips from the database. Please check your connection.");
+            }
+            hideLoader();
+            renderDashboardTrips();
+        };
+
+        const syncTripToDatabase = async (tripData, isDelete = false) => {
+            const payload = isDelete ? { action: 'delete', id: tripData.id } : { action: 'save', trip: tripData };
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Prevents CORS preflight issues
+                    body: JSON.stringify(payload)
+                });
+            } catch (error) {
+                console.error("Error syncing to database:", error);
+            }
+        };
+
+
+        // --- Utils ---
+        const formatDate = (dateStr) => dateStr ? new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+        const formatDateTime = (dateStr) => {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' • ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        };
+        const getStatusBadge = (status) => {
+            const badges = {
+                upcoming: '<span class="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800 border border-blue-200">Upcoming</span>',
+                planning: '<span class="px-3 py-1 text-sm font-medium rounded-full bg-amber-100 text-amber-800 border border-amber-200">Planning</span>',
+                completed: '<span class="px-3 py-1 text-sm font-medium rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">Completed</span>'
+            };
+            return badges[status] || badges['planning'];
+        };
+        const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2, 5);
+        const getDatesBetween = (startDate, endDate) => {
+            const dates = [];
+            let curr = new Date(startDate);
+            const last = new Date(endDate);
+            while (curr <= last) {
+                dates.push(curr.toISOString().split('T')[0]);
+                curr.setDate(curr.getDate() + 1);
+            }
+            return dates;
+        };
+
+        // --- View Switching ---
+        const switchView = (viewId) => {
+            ['dashboard-view', 'trip-overview-view', 'category-details-view', 'day-details-view'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+                document.getElementById(id).classList.remove(id === 'dashboard-view' ? 'block' : 'flex');
+            });
+            const target = document.getElementById(viewId);
+            target.classList.remove('hidden');
+            target.classList.add(viewId === 'dashboard-view' ? 'block' : 'flex');
+        };
+
+        const goBackToDashboard = () => {
+            currentTripId = null;
+            currentCategory = null;
+            switchView('dashboard-view');
+            renderDashboardTrips();
+        };
+
+        const viewTripOverview = (id) => {
+            currentTripId = id;
+            currentCategory = null;
+            switchView('trip-overview-view');
+            renderTripOverview();
+        };
+
+        const goBackToTripOverview = () => {
+            currentCategory = null;
+            switchView('trip-overview-view');
+            renderTripOverview();
+        };
+
+        const viewCategory = (category) => {
+            currentCategory = category;
+            currentDayDate = null;
+            switchView('category-details-view');
+            renderCategoryDetails();
+        };
+
+        const viewDay = (dateStr, dayNum) => {
+            currentDayDate = dateStr;
+            currentDayNumber = dayNum;
+            switchView('day-details-view');
+            renderDayDetails();
+        };
+
+        const goBackToItinerary = () => {
+            currentDayDate = null;
+            currentDayNumber = null;
+            switchView('category-details-view');
+            renderCategoryDetails();
+        };
+
+        // --- Modals General Setup ---
+        const openModal = (id) => { document.getElementById(id).classList.remove('hide-modal'); document.getElementById(id).classList.add('show-modal'); };
+        const closeModal = (id) => { document.getElementById(id).classList.remove('show-modal'); document.getElementById(id).classList.add('hide-modal'); if (id === 'delete-modal') deleteTarget = { type: null, id: null }; };
+
+
+        // ==========================================
+        // LEVEL 1: DASHBOARD
+        // ==========================================
+        const renderDashboardTrips = () => {
+            const container = document.getElementById('trips-container');
+            container.innerHTML = '';
+            if (trips.length === 0) {
+                container.classList.add('hidden'); document.getElementById('empty-state').classList.remove('hidden'); return;
+            }
+            container.classList.remove('hidden'); document.getElementById('empty-state').classList.add('hidden');
+
+            [...trips].sort((a, b) => {
+                const isACompleted = a.status === 'completed';
+                const isBCompleted = b.status === 'completed';
+                
+                if (isACompleted && !isBCompleted) return 1;
+                if (!isACompleted && isBCompleted) return -1;
+                
+                if (isACompleted) {
+                    return new Date(b.startDate) - new Date(a.startDate);
+                } else {
+                    return new Date(a.startDate) - new Date(b.startDate);
+                }
+            }).forEach(trip => {
+                // Image Upgrade Fallback List
+                const randomDefaultImages = [
+                    'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600',
+                    'https://images.unsplash.com/photo-1488085061387-422e29b40080?w=600',
+                    'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600',
+                    'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600'
+                ];
+                const fallbackImage = randomDefaultImages[trip.id.charCodeAt(0) % randomDefaultImages.length] || randomDefaultImages[0];
+                const imgUrl = trip.imageUrl || fallbackImage;
+
+                container.innerHTML += `
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 group flex flex-col h-full cursor-pointer" onclick="viewTripOverview('${trip.id}')">
+                        <div class="relative h-48 overflow-hidden bg-gray-200">
+                            <img src="${imgUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src='${fallbackImage}'">
+                            <div class="absolute top-3 right-3 flex gap-2">${getStatusBadge(trip.status)}</div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-4">
+                                <div class="flex gap-2">
+                                    <button onclick="event.stopPropagation(); openTripModal('${trip.id}')" class="p-2 bg-white/90 rounded-lg hover:bg-white text-gray-700 transition-colors shadow-sm" title="Edit Trip"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                    <button onclick="event.stopPropagation(); triggerDelete('trip', '${trip.id}')" class="p-2 bg-white/90 rounded-lg hover:bg-red-50 text-red-600 transition-colors shadow-sm" title="Delete Trip"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-5 flex flex-col flex-grow">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2 line-clamp-1">${trip.destination}</h3>
+                            <div class="flex items-center text-sm text-gray-500 mb-4"><i data-lucide="calendar" class="w-4 h-4 mr-2"></i><span>${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}</span></div>
+                        </div>
+                    </div>`;
+            });
+            lucide.createIcons();
+        };
+
+        const openTripModal = (id = null) => {
+            document.getElementById('trip-form').reset();
+            if (id) {
+                document.getElementById('trip-modal-title').textContent = 'Edit Trip';
+                const trip = trips.find(t => t.id === id);
+                document.getElementById('trip-id').value = trip.id;
+                document.getElementById('trip-destination').value = trip.destination;
+                document.getElementById('trip-start-date').value = trip.startDate.split('T')[0]; // Format for input
+                document.getElementById('trip-end-date').value = trip.endDate.split('T')[0]; // Format for input
+                document.getElementById('trip-image-url').value = trip.imageUrl;
+                document.getElementById('trip-status').value = trip.status;
+            } else {
+                document.getElementById('trip-modal-title').textContent = 'Add New Trip';
+                document.getElementById('trip-id').value = '';
+                document.getElementById('trip-status').value = 'planning';
+            }
+            openModal('trip-modal');
+        };
+
+        const saveTrip = async () => {
+            const form = document.getElementById('trip-form');
+            if (!form.checkValidity()) return form.reportValidity();
+            
+            showLoader("Saving trip to database...");
+
+            const id = document.getElementById('trip-id').value;
+            const tripData = {
+                id: id || generateId(),
+                destination: document.getElementById('trip-destination').value,
+                startDate: document.getElementById('trip-start-date').value,
+                endDate: document.getElementById('trip-end-date').value,
+                imageUrl: document.getElementById('trip-image-url').value,
+                status: document.getElementById('trip-status').value,
+                flights: [], itinerary: [], expenses: []
+            };
+
+            if (id) {
+                const ex = trips.find(t => t.id === id);
+                tripData.flights = ex.flights || []; 
+                tripData.itinerary = ex.itinerary || []; 
+                tripData.expenses = ex.expenses || [];
+                trips = trips.map(t => t.id === id ? tripData : t);
+            } else { 
+                trips.push(tripData); 
+            }
+            
+            await syncTripToDatabase(tripData);
+
+            hideLoader();
+            closeModal('trip-modal');
+            currentTripId ? renderTripOverview() : renderDashboardTrips();
+        };
+
+
+        // ==========================================
+        // LEVEL 2: TRIP OVERVIEW
+        // ==========================================
+        const renderTripOverview = () => {
+            if (!currentTripId) return;
+            const trip = trips.find(t => t.id === currentTripId);
+            
+            document.getElementById('overview-destination').textContent = trip.destination;
+            document.getElementById('overview-dates').innerHTML = `<i data-lucide="calendar" class="w-4 h-4 mr-2"></i> <span>${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}</span>`;
+            document.getElementById('overview-status-badge').innerHTML = getStatusBadge(trip.status);
+
+            const flightCount = trip.flights ? trip.flights.length : 0;
+            const itineraryCount = trip.itinerary ? trip.itinerary.length : 0;
+            const expensesList = trip.expenses || [];
+            
+            document.getElementById('summary-flights').textContent = `${flightCount} booked`;
+            document.getElementById('summary-itinerary').textContent = `${itineraryCount} activities`;
+            const totalExp = expensesList.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+            document.getElementById('summary-expenses').textContent = `$${totalExp.toFixed(2)} spent`;
+            
+            lucide.createIcons();
+        };
+
+
+        // ==========================================
+        // LEVEL 3: CATEGORY DETAILS
+        // ==========================================
+        const renderCategoryDetails = () => {
+            if (!currentTripId || !currentCategory) return;
+            const trip = trips.find(t => t.id === currentTripId);
+            const container = document.getElementById('category-content-container');
+            const headerTitle = document.getElementById('category-header-title');
+            const headerIcon = document.getElementById('category-header-icon');
+            const addBtn = document.getElementById('add-item-btn');
+            
+            document.getElementById('category-back-text').textContent = `Back to ${trip.destination} Overview`;
+            container.innerHTML = ''; 
+
+            if (currentCategory === 'flights') {
+                headerTitle.textContent = 'Flights';
+                headerIcon.className = 'p-3 rounded-xl bg-blue-100 text-blue-600';
+                headerIcon.innerHTML = '<i data-lucide="plane" class="w-6 h-6"></i>';
+                addBtn.className = 'inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500';
+                addBtn.onclick = () => openFlightModal();
+                addBtn.classList.remove('hidden');
+                document.getElementById('category-header-subtitle').textContent = 'Manage items';
+                document.getElementById('add-item-text').textContent = 'Add Flight';
+
+                const flights = trip.flights || [];
+                if (flights.length === 0) container.innerHTML = '<p class="text-gray-500 text-center py-8">No flights added yet.</p>';
+                else {
+                    const list = document.createElement('div'); list.className = 'space-y-4';
+                    [...flights].sort((a,b) => new Date(a.departure) - new Date(b.departure)).forEach(f => {
+                        list.innerHTML += `
+                            <div class="flex flex-col md:flex-row md:items-start justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-200 transition-colors group">
+                                <div class="mb-4 md:mb-0 w-full">
+                                    <h4 class="font-bold text-gray-900 text-lg">${f.airline}</h4>
+                                    <div class="flex flex-col sm:flex-row sm:gap-6 mt-2 text-sm text-gray-600">
+                                        <div class="flex items-center gap-2"><i data-lucide="plane-takeoff" class="w-4 h-4 text-blue-500"></i> ${formatDateTime(f.departure)}</div>
+                                        <div class="flex items-center gap-2 mt-1 sm:mt-0"><i data-lucide="plane-landing" class="w-4 h-4 text-blue-500"></i> ${formatDateTime(f.arrival)}</div>
+                                    </div>
+                                    ${f.notes ? `<p class="text-gray-600 text-sm mt-3 bg-white p-3 rounded-lg border border-gray-100">${f.notes}</p>` : ''}
+                                </div>
+                                <div class="flex gap-2 justify-end shrink-0 ml-4">
+                                    <button onclick="openFlightModal('${f.id}')" class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><i data-lucide="edit-2" class="w-5 h-5"></i></button>
+                                    <button onclick="triggerDelete('flight', '${f.id}')" class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                </div>
+                            </div>`;
+                    });
+                    container.appendChild(list);
+                }
+            } 
+            else if (currentCategory === 'itinerary') {
+                headerTitle.textContent = 'Itinerary';
+                headerIcon.className = 'p-3 rounded-xl bg-amber-100 text-amber-600';
+                headerIcon.innerHTML = '<i data-lucide="map-pin" class="w-6 h-6"></i>';
+                addBtn.className = 'hidden'; 
+                document.getElementById('category-header-subtitle').textContent = 'Select a day to view activities';
+
+                const dates = getDatesBetween(trip.startDate, trip.endDate);
+                const itinerary = trip.itinerary || [];
+                
+                if (dates.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-8">Please set valid trip start and end dates to view itinerary days.</p>';
+                } else {
+                    const grid = document.createElement('div');
+                    grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
+                    
+                    dates.forEach((date, index) => {
+                        const dayActivities = itinerary.filter(i => i.time.startsWith(date));
+                        grid.innerHTML += `
+                            <div onclick="viewDay('${date}', ${index + 1})" class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-amber-300 cursor-pointer transition-all group">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="font-bold text-lg text-gray-900 group-hover:text-amber-600 transition-colors">Day ${index + 1}</h3>
+                                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300 group-hover:text-amber-500 transform group-hover:translate-x-1 transition-all"></i>
+                                </div>
+                                <p class="text-sm text-gray-500 mb-4">${formatDate(date)}</p>
+                                <div class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-medium">
+                                    <i data-lucide="list" class="w-3.5 h-3.5"></i>
+                                    ${dayActivities.length} activities
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    const scheduledIds = new Set();
+                    dates.forEach(date => itinerary.filter(i => i.time.startsWith(date)).forEach(i => scheduledIds.add(i.id)));
+                    const unscheduled = itinerary.filter(i => !scheduledIds.has(i.id));
+                    
+                    if (unscheduled.length > 0) {
+                        grid.innerHTML += `
+                            <div onclick="viewDay('unscheduled', 'Other')" class="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-400 cursor-pointer transition-all group">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="font-bold text-lg text-gray-700 group-hover:text-gray-900 transition-colors">Other Dates</h3>
+                                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400 group-hover:text-gray-600 transform group-hover:translate-x-1 transition-all"></i>
+                                </div>
+                                <p class="text-sm text-gray-500 mb-4">Activities outside trip dates</p>
+                                <div class="inline-flex items-center gap-1.5 bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">
+                                    <i data-lucide="list" class="w-3.5 h-3.5"></i>
+                                    ${unscheduled.length} activities
+                                </div>
+                            </div>
+                        `;
+                    }
+                    container.appendChild(grid);
+                }
+            }
+            else if (currentCategory === 'expenses') {
+                headerTitle.textContent = 'Expenses';
+                headerIcon.className = 'p-3 rounded-xl bg-emerald-100 text-emerald-600';
+                headerIcon.innerHTML = '<i data-lucide="dollar-sign" class="w-6 h-6"></i>';
+                addBtn.className = 'inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500';
+                addBtn.onclick = () => openExpenseModal();
+                addBtn.classList.remove('hidden');
+                document.getElementById('category-header-subtitle').textContent = 'Manage items';
+                document.getElementById('add-item-text').textContent = 'Add Expense';
+
+                const expenses = trip.expenses || [];
+                const total = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+                
+                container.innerHTML = `
+                    <div class="flex justify-between items-center p-4 bg-emerald-50 border border-emerald-100 rounded-xl mb-6">
+                        <span class="text-emerald-800 font-medium">Total Trip Expenses</span>
+                        <span class="text-2xl font-bold text-emerald-700">$${total.toFixed(2)}</span>
+                    </div>
+                `;
+
+                if (expenses.length === 0) container.innerHTML += '<p class="text-gray-500 text-center py-4">No expenses recorded yet.</p>';
+                else {
+                    const list = document.createElement('div'); list.className = 'space-y-3';
+                    expenses.forEach(e => {
+                        list.innerHTML += `
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-emerald-200 transition-colors group">
+                                <span class="font-medium text-gray-900">${e.description}</span>
+                                <div class="flex items-center gap-4">
+                                    <span class="font-bold text-gray-900 text-lg">$${parseFloat(e.amount).toFixed(2)}</span>
+                                    <div class="flex gap-1">
+                                        <button onclick="openExpenseModal('${e.id}')" class="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                        <button onclick="triggerDelete('expense', '${e.id}')" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    </div>
+                                </div>
+                            </div>`;
+                    });
+                    container.appendChild(list);
+                }
+            }
+            lucide.createIcons();
+        };
+
+
+        // ==========================================
+        // LEVEL 4: DAY DETAILS
+        // ==========================================
+        const renderDayDetails = () => {
+            if (!currentTripId || !currentDayDate) return;
+            const trip = trips.find(t => t.id === currentTripId);
+            const container = document.getElementById('day-content-container');
+            
+            document.getElementById('day-header-title').textContent = currentDayDate === 'unscheduled' ? 'Other Dates' : `Day ${currentDayNumber}`;
+            document.getElementById('day-header-subtitle').textContent = currentDayDate === 'unscheduled' ? 'Activities outside planned dates' : formatDate(currentDayDate);
+            
+            container.innerHTML = '';
+            
+            let dayActivities = [];
+            const itinerary = trip.itinerary || [];
+            if (currentDayDate === 'unscheduled') {
+                const dates = getDatesBetween(trip.startDate, trip.endDate);
+                const scheduledIds = new Set();
+                dates.forEach(date => itinerary.filter(i => i.time.startsWith(date)).forEach(i => scheduledIds.add(i.id)));
+                dayActivities = itinerary.filter(i => !scheduledIds.has(i.id));
+            } else {
+                dayActivities = itinerary.filter(i => i.time.startsWith(currentDayDate));
+            }
+
+            if (dayActivities.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">No activities planned for this day.</p>';
+            } else {
+                const list = document.createElement('div'); list.className = 'pl-2';
+                [...dayActivities].sort((a,b) => new Date(a.time) - new Date(b.time)).forEach(item => {
+                    list.innerHTML += `
+                        <div class="relative pl-10 pb-6 timeline-item group">
+                            <div class="timeline-line"></div>
+                            <div class="absolute left-0 top-1.5 w-[20px] h-[20px] rounded-full bg-amber-100 border-4 border-white shadow-sm z-10 flex items-center justify-center">
+                                <div class="w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
+                            </div>
+                            <div class="bg-gray-50 rounded-xl border border-gray-100 p-4 hover:border-amber-200 transition-colors">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <h4 class="font-bold text-gray-900 text-lg">${item.activity}</h4>
+                                        <div class="text-sm font-medium text-amber-600 mt-1">${formatDateTime(item.time)}</div>
+                                    </div>
+                                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onclick="openItineraryModal('${item.id}')" class="p-1.5 text-gray-500 hover:text-amber-600 rounded-lg"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                        <button onclick="triggerDelete('itinerary', '${item.id}')" class="p-1.5 text-gray-500 hover:text-red-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    </div>
+                                </div>
+                                ${item.notes ? `<p class="text-gray-600 text-sm mt-3 bg-white p-3 rounded-lg border border-gray-100">${item.notes}</p>` : ''}
+                            </div>
+                        </div>`;
+                });
+                container.appendChild(list);
+            }
+            lucide.createIcons();
+        };
+
+
+        // --- Category Modals Logic ---
+        const openFlightModal = (id = null) => {
+            const form = document.getElementById('flight-form'); form.reset();
+            const trip = trips.find(t => t.id === currentTripId);
+            if (id) {
+                document.getElementById('flight-modal-title').textContent = 'Edit Flight';
+                const f = (trip.flights || []).find(i => i.id === id);
+                document.getElementById('flight-id').value = f.id; 
+                document.getElementById('flight-airline').value = f.airline;
+                document.getElementById('flight-departure').value = f.departure; 
+                document.getElementById('flight-arrival').value = f.arrival;
+                document.getElementById('flight-notes').value = f.notes || '';
+            } else { 
+                document.getElementById('flight-modal-title').textContent = 'Add Flight'; 
+                document.getElementById('flight-id').value = ''; 
+            }
+            openModal('flight-modal');
+        };
+        const saveFlight = async () => {
+            if (!document.getElementById('flight-form').checkValidity()) return document.getElementById('flight-form').reportValidity();
+            
+            showLoader("Saving flight...");
+            const trip = trips.find(t => t.id === currentTripId); 
+            const id = document.getElementById('flight-id').value;
+            const data = { 
+                id: id || generateId(), 
+                airline: document.getElementById('flight-airline').value, 
+                departure: document.getElementById('flight-departure').value, 
+                arrival: document.getElementById('flight-arrival').value,
+                notes: document.getElementById('flight-notes').value
+            };
+            
+            trip.flights = trip.flights || [];
+            id ? trip.flights = trip.flights.map(f => f.id === id ? data : f) : trip.flights.push(data);
+            
+            await syncTripToDatabase(trip);
+            
+            hideLoader();
+            closeModal('flight-modal'); renderCategoryDetails();
+        };
+
+        const openItineraryModal = (id = null) => {
+            const form = document.getElementById('itinerary-form'); form.reset();
+            const trip = trips.find(t => t.id === currentTripId);
+            if (id) {
+                document.getElementById('itinerary-modal-title').textContent = 'Edit Activity';
+                const i = (trip.itinerary || []).find(x => x.id === id);
+                document.getElementById('itinerary-id').value = i.id; document.getElementById('itinerary-activity').value = i.activity;
+                document.getElementById('itinerary-time').value = i.time; document.getElementById('itinerary-notes').value = i.notes || '';
+            } else { 
+                document.getElementById('itinerary-modal-title').textContent = 'Add Activity'; 
+                document.getElementById('itinerary-id').value = ''; 
+                if (currentDayDate && currentDayDate !== 'unscheduled') {
+                    document.getElementById('itinerary-time').value = `${currentDayDate}T10:00`;
+                }
+            }
+            openModal('itinerary-modal');
+        };
+        const saveItinerary = async () => {
+            if (!document.getElementById('itinerary-form').checkValidity()) return document.getElementById('itinerary-form').reportValidity();
+            
+            showLoader("Saving activity...");
+            const trip = trips.find(t => t.id === currentTripId); 
+            const id = document.getElementById('itinerary-id').value;
+            const data = { id: id || generateId(), activity: document.getElementById('itinerary-activity').value, time: document.getElementById('itinerary-time').value, notes: document.getElementById('itinerary-notes').value };
+            
+            trip.itinerary = trip.itinerary || [];
+            id ? trip.itinerary = trip.itinerary.map(i => i.id === id ? data : i) : trip.itinerary.push(data);
+            
+            await syncTripToDatabase(trip);
+
+            hideLoader();
+            closeModal('itinerary-modal'); 
+            currentDayDate ? renderDayDetails() : renderCategoryDetails();
+        };
+
+        const openExpenseModal = (id = null) => {
+            const form = document.getElementById('expense-form'); form.reset();
+            const trip = trips.find(t => t.id === currentTripId);
+            if (id) {
+                document.getElementById('expense-modal-title').textContent = 'Edit Expense';
+                const e = (trip.expenses || []).find(x => x.id === id);
+                document.getElementById('expense-id').value = e.id; document.getElementById('expense-desc').value = e.description; document.getElementById('expense-amount').value = e.amount;
+            } else { document.getElementById('expense-modal-title').textContent = 'Add Expense'; document.getElementById('expense-id').value = ''; }
+            openModal('expense-modal');
+        };
+        const saveExpense = async () => {
+            if (!document.getElementById('expense-form').checkValidity()) return document.getElementById('expense-form').reportValidity();
+            
+            showLoader("Saving expense...");
+            const trip = trips.find(t => t.id === currentTripId); 
+            const id = document.getElementById('expense-id').value;
+            const data = { id: id || generateId(), description: document.getElementById('expense-desc').value, amount: parseFloat(document.getElementById('expense-amount').value).toFixed(2) };
+            
+            trip.expenses = trip.expenses || [];
+            id ? trip.expenses = trip.expenses.map(e => e.id === id ? data : e) : trip.expenses.push(data);
+            
+            await syncTripToDatabase(trip);
+
+            hideLoader();
+            closeModal('expense-modal'); renderCategoryDetails();
+        };
+
+        // --- Generic Delete ---
+        const triggerDelete = (type, id) => { deleteTarget = { type, id }; openModal('delete-modal'); };
+        
+        const confirmDelete = async () => {
+            const { type, id } = deleteTarget;
+            showLoader("Deleting item...");
+
+            if (type === 'trip') { 
+                trips = trips.filter(t => t.id !== id); 
+                await syncTripToDatabase({ id: id }, true); // True marks it as a delete action
+                renderDashboardTrips(); 
+            } 
+            else if (currentTripId) {
+                const trip = trips.find(t => t.id === currentTripId);
+                if (type === 'flight') trip.flights = trip.flights.filter(f => f.id !== id);
+                if (type === 'itinerary') trip.itinerary = trip.itinerary.filter(i => i.id !== id);
+                if (type === 'expense') trip.expenses = trip.expenses.filter(e => e.id !== id);
+                
+                await syncTripToDatabase(trip);
+
+                if (currentDayDate && type === 'itinerary') {
+                    renderDayDetails();
+                } else {
+                    renderCategoryDetails();
+                }
+            }
+            hideLoader();
+            closeModal('delete-modal');
+        };
+
+        // --- App Initialization ---
+        // Fetch real data on load instead of rendering dummy data
+        fetchTripsFromDatabase();
+
+    </script>
+</body>
+</html>
