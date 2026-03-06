@@ -267,14 +267,22 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Airline & Flight #</label>
                         <input type="text" id="flight-airline" required placeholder="e.g., Delta DL123" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400">
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="col-span-2">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Departure</label>
                             <input type="datetime-local" id="flight-departure" required class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark]">
                         </div>
                         <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Terminal</label>
+                            <input type="text" id="flight-dep-terminal" placeholder="e.g., 1" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400">
+                        </div>
+                        <div class="col-span-2">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Arrival</label>
                             <input type="datetime-local" id="flight-arrival" required class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark]">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Terminal</label>
+                            <input type="text" id="flight-arr-terminal" placeholder="e.g., 3" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400">
                         </div>
                     </div>
                     <div>
@@ -469,11 +477,22 @@
 
 
         // --- Utils ---
-        const formatDate = (dateStr) => dateStr ? new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+        const formatDate = (dateStr) => {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = d.toLocaleString('en-US', { month: 'short' });
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        };
+
         const formatDateTime = (dateStr) => {
             if (!dateStr) return '';
             const d = new Date(dateStr);
-            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' • ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = d.toLocaleString('en-US', { month: 'short' });
+            const year = d.getFullYear();
+            return `${day}/${month}/${year} • ` + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         };
         
         const getStatusBadge = (status) => {
@@ -741,8 +760,16 @@
                                 <div class="mb-4 md:mb-0 w-full">
                                     <h4 class="font-bold text-gray-900 dark:text-white text-lg">${f.airline}</h4>
                                     <div class="flex flex-col sm:flex-row sm:gap-6 mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                        <div class="flex items-center gap-2"><i data-lucide="plane-takeoff" class="w-4 h-4 text-blue-500 dark:text-blue-400"></i> ${formatDateTime(f.departure)}</div>
-                                        <div class="flex items-center gap-2 mt-1 sm:mt-0"><i data-lucide="plane-landing" class="w-4 h-4 text-blue-500 dark:text-blue-400"></i> ${formatDateTime(f.arrival)}</div>
+                                        <div class="flex items-center gap-2">
+                                            <i data-lucide="plane-takeoff" class="w-4 h-4 text-blue-500 dark:text-blue-400"></i> 
+                                            ${formatDateTime(f.departure)}
+                                            ${f.depTerminal ? `<span class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded text-xs font-bold ml-1">T${f.depTerminal.replace(/^t/i, '').trim()}</span>` : ''}
+                                        </div>
+                                        <div class="flex items-center gap-2 mt-1 sm:mt-0">
+                                            <i data-lucide="plane-landing" class="w-4 h-4 text-blue-500 dark:text-blue-400"></i> 
+                                            ${formatDateTime(f.arrival)}
+                                            ${f.arrTerminal ? `<span class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded text-xs font-bold ml-1">T${f.arrTerminal.replace(/^t/i, '').trim()}</span>` : ''}
+                                        </div>
                                     </div>
                                     ${f.notes ? `<p class="text-gray-600 dark:text-gray-300 text-sm mt-3 bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700">${f.notes}</p>` : ''}
                                 </div>
@@ -948,7 +975,9 @@
                 document.getElementById('flight-id').value = f.id; 
                 document.getElementById('flight-airline').value = f.airline;
                 document.getElementById('flight-departure').value = f.departure; 
+                document.getElementById('flight-dep-terminal').value = f.depTerminal || '';
                 document.getElementById('flight-arrival').value = f.arrival;
+                document.getElementById('flight-arr-terminal').value = f.arrTerminal || '';
                 document.getElementById('flight-notes').value = f.notes || '';
             } else { 
                 document.getElementById('flight-modal-title').textContent = 'Add Flight'; 
@@ -966,7 +995,9 @@
                 id: id || generateId(), 
                 airline: document.getElementById('flight-airline').value, 
                 departure: document.getElementById('flight-departure').value, 
+                depTerminal: document.getElementById('flight-dep-terminal').value,
                 arrival: document.getElementById('flight-arrival').value,
+                arrTerminal: document.getElementById('flight-arr-terminal').value,
                 notes: document.getElementById('flight-notes').value
             };
             
