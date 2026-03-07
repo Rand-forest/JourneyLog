@@ -91,13 +91,16 @@
             <h2 id="auth-title" class="text-xl font-bold text-gray-900 dark:text-white mb-6 text-center">Welcome Back</h2>
             
             <form id="auth-form" class="space-y-5" onsubmit="handleAuth(event)">
-                <input type="hidden" id="auth-is-register" value="false">
+                <input type="hidden" id="auth-mode" value="login">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
                     <input type="text" id="auth-username" required placeholder="Enter your username" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white outline-none transition-shadow">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                    <div class="flex justify-between items-center mb-1">
+                        <label id="auth-password-label" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+                        <button type="button" id="forgot-password-btn" onclick="setAuthMode('reset')" class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">Forgot password?</button>
+                    </div>
                     <input type="password" id="auth-password" required placeholder="••••••••" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white outline-none transition-shadow">
                 </div>
                 <button type="submit" id="auth-submit-btn" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 focus:ring-blue-500 transition-colors mt-2">
@@ -108,7 +111,7 @@
             <div class="mt-6 text-center">
                 <p class="text-sm text-gray-600 dark:text-gray-400">
                     <span id="auth-switch-text">Don't have an account?</span>
-                    <button onclick="toggleAuthMode()" id="auth-switch-btn" class="font-medium text-blue-600 dark:text-blue-400 hover:underline ml-1">Create one</button>
+                    <button onclick="setAuthMode('register')" id="auth-switch-btn" class="font-medium text-blue-600 dark:text-blue-400 hover:underline ml-1">Create one</button>
                 </p>
             </div>
         </div>
@@ -591,27 +594,46 @@
         };
 
         // --- Auth Logic ---
-        const toggleAuthMode = () => {
-            const isRegister = document.getElementById('auth-is-register');
+        const setAuthMode = (mode) => {
+            const modeInput = document.getElementById('auth-mode');
             const title = document.getElementById('auth-title');
             const submitBtn = document.getElementById('auth-submit-btn');
             const switchText = document.getElementById('auth-switch-text');
             const switchBtn = document.getElementById('auth-switch-btn');
+            const forgotBtn = document.getElementById('forgot-password-btn');
+            const passwordLabel = document.getElementById('auth-password-label');
 
-            if (isRegister.value === 'false') {
-                isRegister.value = 'true';
+            modeInput.value = mode;
+
+            if (mode === 'register') {
                 title.textContent = 'Create Account';
                 submitBtn.textContent = 'Register';
                 switchText.textContent = 'Already have an account?';
                 switchBtn.textContent = 'Login here';
+                switchBtn.onclick = (e) => { e.preventDefault(); setAuthMode('login'); };
+                forgotBtn.classList.add('hidden');
+                passwordLabel.textContent = 'Password';
+            } else if (mode === 'reset') {
+                title.textContent = 'Reset Password';
+                submitBtn.textContent = 'Set New Password';
+                switchText.textContent = 'Remembered your password?';
+                switchBtn.textContent = 'Login here';
+                switchBtn.onclick = (e) => { e.preventDefault(); setAuthMode('login'); };
+                forgotBtn.classList.add('hidden');
+                passwordLabel.textContent = 'New Password';
             } else {
-                isRegister.value = 'false';
                 title.textContent = 'Welcome Back';
                 submitBtn.textContent = 'Login';
                 switchText.textContent = "Don't have an account?";
                 switchBtn.textContent = 'Create one';
+                switchBtn.onclick = (e) => { e.preventDefault(); setAuthMode('register'); };
+                forgotBtn.classList.remove('hidden');
+                passwordLabel.textContent = 'Password';
             }
         };
+
+        // Initialize toggle to use new state manager
+        document.getElementById('auth-switch-btn').onclick = (e) => { e.preventDefault(); setAuthMode('register'); };
 
         const loginUserUI = (username) => {
             currentUser = username;
@@ -631,19 +653,23 @@
 
         const handleAuth = async (e) => {
             e.preventDefault();
-            const isRegister = document.getElementById('auth-is-register').value === 'true';
+            const mode = document.getElementById('auth-mode').value;
             const username = document.getElementById('auth-username').value.trim();
             const password = document.getElementById('auth-password').value.trim();
 
             if (!username || !password) return;
 
-            showLoader(isRegister ? "Creating account..." : "Authenticating...");
+            let loadingMsg = "Authenticating...";
+            if (mode === 'register') loadingMsg = "Creating account...";
+            if (mode === 'reset') loadingMsg = "Resetting password...";
+            
+            showLoader(loadingMsg);
 
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: isRegister ? 'register' : 'login', username, password })
+                    body: JSON.stringify({ action: mode, username, password })
                 });
                 
                 const textResponse = await response.text();
@@ -657,7 +683,14 @@
 
                 if (result.success) {
                     showToast(result.message);
-                    loginUserUI(username);
+                    if (mode === 'reset') {
+                        // Immediately login after reset
+                        loginUserUI(username);
+                    } else if (mode === 'register') {
+                        loginUserUI(username);
+                    } else {
+                        loginUserUI(username);
+                    }
                 } else {
                     showToast(result.message, true);
                 }
@@ -680,12 +713,8 @@
             document.getElementById('auth-password').value = '';
             document.getElementById('auth-username').value = ''; 
             
-            // Force form back to Login mode
-            document.getElementById('auth-is-register').value = 'false';
-            document.getElementById('auth-title').textContent = 'Welcome Back';
-            document.getElementById('auth-submit-btn').textContent = 'Login';
-            document.getElementById('auth-switch-text').textContent = "Don't have an account?";
-            document.getElementById('auth-switch-btn').textContent = 'Create one';
+            // Force form back to Login mode via state manager
+            setAuthMode('login');
             
             showToast("Successfully logged out.");
         };
