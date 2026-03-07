@@ -328,7 +328,7 @@
                 <h3 id="flight-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">Add Flight</h3>
                 <button onclick="closeModal('flight-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <div class="p-6">
+            <div class="p-6 overflow-y-auto max-h-[70vh]">
                 <form id="flight-form" class="space-y-4">
                     <input type="hidden" id="flight-id">
                     <div>
@@ -428,4 +428,1385 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date & Time</label>
                         <div class="flex gap-2">
-                            <input type="date" id="itinerary-date" required
+                            <input type="date" id="itinerary-date" required class="w-3/5 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:text-white [color-scheme:light_dark]">
+                            <input type="time" id="itinerary-time" required class="w-2/5 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:text-white [color-scheme:light_dark]">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes (Optional)</label>
+                        <textarea id="itinerary-notes" rows="2" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:text-white dark:placeholder-gray-400"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3">
+                <button type="button" onclick="closeModal('itinerary-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</button>
+                <button type="button" onclick="saveItinerary()" class="px-4 py-2 text-sm font-medium text-white bg-amber-600 dark:bg-amber-500 rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expense Modal -->
+    <div id="expense-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 dark:bg-gray-900/80 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm overflow-hidden modal-content">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                <h3 id="expense-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">Add Expense</h3>
+                <button onclick="closeModal('expense-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6">
+                <form id="expense-form" class="space-y-4">
+                    <input type="hidden" id="expense-id">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                        <input type="text" id="expense-desc" required placeholder="e.g., Dinner at Cafe" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 dark:text-white dark:placeholder-gray-400">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
+                            <input type="number" id="expense-amount" step="0.01" min="0" required placeholder="0.00" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 dark:text-white dark:placeholder-gray-400" oninput="calculateSGD()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Local per SGD$1</label>
+                            <input type="number" id="expense-rate" step="0.000001" min="0.000001" required placeholder="1.00" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 transition-colors dark:text-white dark:placeholder-gray-400" oninput="calculateSGD()">
+                        </div>
+                        <div class="col-span-2 flex items-center mb-1">
+                            <input type="checkbox" id="expense-use-nominal" class="w-4 h-4 text-emerald-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-emerald-500 dark:focus:ring-emerald-600 dark:ring-offset-gray-800 cursor-pointer" onchange="toggleNominalRate()">
+                            <label for="expense-use-nominal" class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">Use nominal rate</label>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300 bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-100 dark:border-emerald-800/50 flex justify-between items-center">
+                        <span>Equivalent in SGD:</span>
+                        <span id="expense-sgd-calc" class="font-bold text-emerald-700 dark:text-emerald-400 text-lg">SGD$ 0.00</span>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3">
+                <button type="button" onclick="closeModal('expense-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</button>
+                <button type="button" onclick="saveExpense()" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 dark:bg-emerald-500 rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-600">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Delete Modal -->
+    <div id="delete-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 dark:bg-gray-900/80 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm overflow-hidden modal-content">
+            <div class="p-6 text-center">
+                <div class="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 mx-auto flex items-center justify-center mb-4"><i data-lucide="alert-triangle" class="w-6 h-6 text-red-600 dark:text-red-400"></i></div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Item?</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Are you sure you want to delete this? This action cannot be undone.</p>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 flex justify-center gap-3">
+                <button onclick="closeModal('delete-modal')" class="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</button>
+                <button onclick="confirmDelete()" class="w-full px-4 py-2 text-sm font-medium text-white bg-red-600 dark:bg-red-500 border border-transparent rounded-lg hover:bg-red-700 dark:hover:bg-red-600">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div id="share-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 dark:bg-gray-900/80 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm overflow-hidden modal-content">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Share Trip</h3>
+                <button onclick="closeModal('share-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Enter the username of the person you want to collaborate with on this trip.</p>
+                <form id="share-form" class="space-y-4" onsubmit="submitShare(event)">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+                        <input type="text" id="share-username" required placeholder="e.g., sam123" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:text-white dark:placeholder-gray-400">
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3">
+                <button type="button" onclick="closeModal('share-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</button>
+                <button type="button" onclick="submitShare()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-500 rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600">Share</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Theme Management ---
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+        if (document.documentElement.classList.contains('dark')) {
+            themeToggleLightIcon.classList.remove('hidden');
+        } else {
+            themeToggleDarkIcon.classList.remove('hidden');
+        }
+
+        themeToggleBtn.addEventListener('click', function() {
+            themeToggleDarkIcon.classList.toggle('hidden');
+            themeToggleLightIcon.classList.toggle('hidden');
+
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                try { localStorage.setItem('color-theme', 'light'); } catch(e) {}
+            } else {
+                document.documentElement.classList.add('dark');
+                try { localStorage.setItem('color-theme', 'dark'); } catch(e) {}
+            }
+        });
+
+
+        // --- API & State Management ---
+        const API_URL = "https://script.google.com/macros/s/AKfycbybx4GaX7i8YIbRDoOpboA_U_5okOJGo48Pm82HRMLiAmdj_2R02fE529a_G52k9DOj/exec";
+        
+        let trips = []; 
+        let currentTripId = null;
+        let currentCategory = null; 
+        let currentDayDate = null;  
+        let currentDayNumber = null;
+        let deleteTarget = { type: null, id: null }; 
+        let currentUser = null; // Track logged-in user
+
+        lucide.createIcons();
+
+        // --- Toast & Loader UI ---
+        const showLoader = (text = 'Loading...') => {
+            document.getElementById('loader-text').textContent = text;
+            document.getElementById('global-loader').classList.remove('hidden');
+        };
+        const hideLoader = () => {
+            document.getElementById('global-loader').classList.add('hidden');
+        };
+
+        const showToast = (message, isError = false) => {
+            const container = document.getElementById('toast-container');
+            container.classList.remove('hidden');
+            
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2 toast-animate ${
+                isError ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-green-100 text-green-800 border border-green-200'
+            }`;
+            
+            const icon = isError ? '<i data-lucide="alert-circle" class="w-4 h-4"></i>' : '<i data-lucide="check-circle" class="w-4 h-4"></i>';
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        };
+
+        // --- Auth Logic ---
+        const setAuthMode = (mode) => {
+            const modeInput = document.getElementById('auth-mode');
+            const title = document.getElementById('auth-title');
+            const submitBtn = document.getElementById('auth-submit-btn');
+            const switchText = document.getElementById('auth-switch-text');
+            const switchBtn = document.getElementById('auth-switch-btn');
+            const forgotBtn = document.getElementById('forgot-password-btn');
+            const passwordLabel = document.getElementById('auth-password-label');
+
+            modeInput.value = mode;
+
+            if (mode === 'register') {
+                title.textContent = 'Create Account';
+                submitBtn.textContent = 'Register';
+                switchText.textContent = 'Already have an account?';
+                switchBtn.textContent = 'Login here';
+                switchBtn.onclick = (e) => { e.preventDefault(); setAuthMode('login'); };
+                forgotBtn.classList.add('hidden');
+                passwordLabel.textContent = 'Password';
+            } else if (mode === 'reset') {
+                title.textContent = 'Reset Password';
+                submitBtn.textContent = 'Set New Password';
+                switchText.textContent = 'Remembered your password?';
+                switchBtn.textContent = 'Login here';
+                switchBtn.onclick = (e) => { e.preventDefault(); setAuthMode('login'); };
+                forgotBtn.classList.add('hidden');
+                passwordLabel.textContent = 'New Password';
+            } else {
+                title.textContent = 'Welcome Back';
+                submitBtn.textContent = 'Login';
+                switchText.textContent = "Don't have an account?";
+                switchBtn.textContent = 'Create one';
+                switchBtn.onclick = (e) => { e.preventDefault(); setAuthMode('register'); };
+                forgotBtn.classList.remove('hidden');
+                passwordLabel.textContent = 'Password';
+            }
+        };
+
+        // Initialize toggle to use new state manager
+        document.getElementById('auth-switch-btn').onclick = (e) => { e.preventDefault(); setAuthMode('register'); };
+
+        const loginUserUI = (username) => {
+            currentUser = username;
+            try { localStorage.setItem('journeyLogUser', username); } catch(e) {}
+            
+            document.getElementById('nav-username').textContent = username;
+            document.getElementById('nav-avatar').src = `https://ui-avatars.com/api/?name=${username}&background=0D8ABC&color=fff`;
+            
+            document.getElementById('auth-view').classList.add('hidden');
+            document.getElementById('app-wrapper').classList.remove('hidden');
+            document.getElementById('app-wrapper').classList.add('flex');
+            
+            document.documentElement.classList.add('is-authenticated'); // Ensure anti-flash CSS stays active
+            goBackToDashboard(); // Make sure user is explicitly routed to dashboard
+            fetchTripsFromDatabase(); 
+        };
+
+        const handleAuth = async (e) => {
+            e.preventDefault();
+            const mode = document.getElementById('auth-mode').value;
+            const username = document.getElementById('auth-username').value.trim();
+            const password = document.getElementById('auth-password').value.trim();
+
+            if (!username || !password) return;
+
+            let loadingMsg = "Authenticating...";
+            if (mode === 'register') loadingMsg = "Creating account...";
+            if (mode === 'reset') loadingMsg = "Resetting password...";
+            
+            showLoader(loadingMsg);
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: mode, username, password })
+                });
+                
+                const textResponse = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(textResponse);
+                } catch (parseError) {
+                    console.error("HTML Error received instead of JSON:", textResponse);
+                    throw new Error("Apps Script deployment error. Make sure 'Who has access' is set to 'Anyone'.");
+                }
+
+                if (result.success) {
+                    showToast(result.message);
+                    if (mode === 'reset') {
+                        // Immediately login after reset
+                        loginUserUI(username);
+                    } else if (mode === 'register') {
+                        loginUserUI(username);
+                    } else {
+                        loginUserUI(username);
+                    }
+                } else {
+                    showToast(result.message, true);
+                }
+            } catch (error) {
+                console.error("Auth error:", error);
+                showToast(error.message || "Connection error. Ensure your Apps Script URL is correct.", true);
+            }
+            hideLoader();
+        };
+
+        const logout = () => {
+            currentUser = null;
+            trips = [];
+            try { localStorage.removeItem('journeyLogUser'); } catch(e) {}
+            document.documentElement.classList.remove('is-authenticated'); // Remove CSS anti-flash
+            
+            document.getElementById('app-wrapper').classList.add('hidden');
+            document.getElementById('app-wrapper').classList.remove('flex');
+            document.getElementById('auth-view').classList.remove('hidden');
+            document.getElementById('auth-password').value = '';
+            document.getElementById('auth-username').value = ''; 
+            
+            // Force form back to Login mode via state manager
+            setAuthMode('login');
+            
+            showToast("Successfully logged out.");
+        };
+
+        // --- Database Sync Functions ---
+        const fetchTripsFromDatabase = async () => {
+            if (!currentUser) return;
+            showLoader("Fetching your trips...");
+            try {
+                const response = await fetch(`${API_URL}?action=getTrips&username=${encodeURIComponent(currentUser)}`);
+                const textResponse = await response.text();
+                
+                try {
+                    trips = JSON.parse(textResponse);
+                } catch (parseError) {
+                    console.error("HTML Error received instead of JSON:", textResponse);
+                    throw new Error("Apps Script deployment error. Ensure 'Who has access' is set to 'Anyone'.");
+                }
+                
+                renderDashboardTrips();
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                showToast(error.message || "Could not load trips from the database.", true);
+            }
+            hideLoader();
+        };
+
+        const syncTripToDatabase = async (tripData, isDelete = false) => {
+            if (!currentUser) return;
+            const payload = isDelete 
+                ? { action: 'delete', id: tripData.id, username: currentUser } 
+                : { action: 'save', trip: tripData, username: currentUser };
+                
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const textResponse = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(textResponse);
+                } catch (parseError) {
+                    console.error("HTML Error received instead of JSON:", textResponse);
+                    throw new Error("Save failed due to Apps Script deployment settings.");
+                }
+                
+                if(!result.success) throw new Error(result.message);
+                
+            } catch (error) {
+                console.error("Error syncing to database:", error);
+                showToast(error.message || "Failed to save changes.", true);
+            }
+        };
+
+        const updateTripStatus = async (newStatus) => {
+            if (!currentTripId) return;
+            const trip = trips.find(t => t.id === currentTripId);
+            if (trip.status === newStatus) return;
+            
+            trip.status = newStatus;
+            showLoader("Updating status...");
+            await syncTripToDatabase(trip);
+            hideLoader();
+            
+            renderTripOverview();
+        };
+
+
+        // --- Utils ---
+        const linkify = (text) => {
+            if (!text) return '';
+            // Basic XSS protection before rendering HTML
+            let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            // Find URLs and wrap them in anchor tags
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            return safeText.replace(urlRegex, function(url) {
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline break-all" onclick="event.stopPropagation()">${url}</a>`;
+            });
+        };
+
+        const formatDate = (dateStr) => {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = d.toLocaleString('en-US', { month: 'short' });
+            const year = d.getFullYear();
+            return `${day} ${month} ${year}`;
+        };
+
+        const formatDateTime = (dateStr) => {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = d.toLocaleString('en-US', { month: 'short' });
+            const year = d.getFullYear();
+            return `${day} ${month} ${year} • ` + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        };
+        
+        const getStatusBadge = (status) => {
+            const badges = {
+                upcoming: '<span class="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800">Upcoming</span>',
+                completed: '<span class="px-3 py-1 text-sm font-medium rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800">Completed</span>'
+            };
+            return badges[status] || badges['upcoming'];
+        };
+
+        const getNominalRate = (trip) => {
+            if (!trip || !trip.expenses) return 1.00;
+            const rateObj = trip.expenses.find(e => e.id === '_NOMINAL_RATE_');
+            return rateObj ? parseFloat(rateObj.rate) : 1.00;
+        };
+
+        const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2, 5);
+        const getDatesBetween = (startDate, endDate) => {
+            const dates = [];
+            let curr = new Date(startDate);
+            const last = new Date(endDate);
+            while (curr <= last) {
+                dates.push(curr.toISOString().split('T')[0]);
+                curr.setDate(curr.getDate() + 1);
+            }
+            return dates;
+        };
+
+        // Date Validation Helpers
+        const validateTripDates = () => {
+            const startInput = document.getElementById('trip-start-date');
+            const endInput = document.getElementById('trip-end-date');
+            if (startInput.value) {
+                endInput.min = startInput.value;
+            }
+        };
+
+        const validateFlightDates = () => {
+            const depDateInput = document.getElementById('flight-departure-date');
+            const arrDateInput = document.getElementById('flight-arrival-date');
+            const connDepDateInput = document.getElementById('conn-departure-date');
+            const connArrDateInput = document.getElementById('conn-arrival-date');
+            
+            if (currentTripId) {
+                const trip = trips.find(t => t.id === currentTripId);
+                if (trip) {
+                    const tStart = trip.startDate.split('T')[0];
+                    const tEnd = trip.endDate.split('T')[0];
+
+                    // Set absolute boundaries for all flight date pickers
+                    depDateInput.min = tStart;
+                    depDateInput.max = tEnd;
+                    
+                    arrDateInput.min = tStart;
+                    arrDateInput.max = tEnd;
+                    
+                    if (connDepDateInput) {
+                        connDepDateInput.min = tStart;
+                        connDepDateInput.max = tEnd;
+                    }
+                    if (connArrDateInput) {
+                        connArrDateInput.min = tStart;
+                        connArrDateInput.max = tEnd;
+                    }
+                }
+            }
+
+            // Dynamically tighten the 'min' constraints based on previous segment selections
+            if (depDateInput.value) arrDateInput.min = depDateInput.value;
+            if (arrDateInput.value && connDepDateInput) connDepDateInput.min = arrDateInput.value;
+            if (connDepDateInput && connDepDateInput.value && connArrDateInput) connArrDateInput.min = connDepDateInput.value;
+        };
+
+        const toggleConnectionFields = () => {
+            const isChecked = document.getElementById('flight-has-connection').checked;
+            const container = document.getElementById('connection-fields');
+            
+            if (isChecked) {
+                container.classList.remove('hidden');
+                document.getElementById('conn-airline').required = true;
+                document.getElementById('conn-departure-date').required = true;
+                document.getElementById('conn-departure-time').required = true;
+                document.getElementById('conn-arrival-date').required = true;
+                document.getElementById('conn-arrival-time').required = true;
+            } else {
+                container.classList.add('hidden');
+                document.getElementById('conn-airline').required = false;
+                document.getElementById('conn-departure-date').required = false;
+                document.getElementById('conn-departure-time').required = false;
+                document.getElementById('conn-arrival-date').required = false;
+                document.getElementById('conn-arrival-time').required = false;
+            }
+        };
+
+        // --- View Switching ---
+        const switchView = (viewId) => {
+            ['dashboard-view', 'trip-overview-view', 'category-details-view', 'day-details-view'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+                document.getElementById(id).classList.remove(id === 'dashboard-view' ? 'block' : 'flex');
+            });
+            const target = document.getElementById(viewId);
+            target.classList.remove('hidden');
+            target.classList.add(viewId === 'dashboard-view' ? 'block' : 'flex');
+        };
+
+        const goBackToDashboard = () => {
+            currentTripId = null;
+            currentCategory = null;
+            switchView('dashboard-view');
+            renderDashboardTrips();
+        };
+
+        const viewTripOverview = (id) => {
+            currentTripId = id;
+            currentCategory = null;
+            switchView('trip-overview-view');
+            renderTripOverview();
+        };
+
+        const goBackToTripOverview = () => {
+            currentCategory = null;
+            switchView('trip-overview-view');
+            renderTripOverview();
+        };
+
+        const viewCategory = (category) => {
+            currentCategory = category;
+            currentDayDate = null;
+            switchView('category-details-view');
+            renderCategoryDetails();
+        };
+
+        const viewDay = (dateStr, dayNum) => {
+            currentDayDate = dateStr;
+            currentDayNumber = dayNum;
+            switchView('day-details-view');
+            renderDayDetails();
+        };
+
+        const goBackToItinerary = () => {
+            currentDayDate = null;
+            currentDayNumber = null;
+            switchView('category-details-view');
+            renderCategoryDetails();
+        };
+
+        const openModal = (id) => { document.getElementById(id).classList.remove('hide-modal'); document.getElementById(id).classList.add('show-modal'); };
+        const closeModal = (id) => { document.getElementById(id).classList.remove('show-modal'); document.getElementById(id).classList.add('hide-modal'); if (id === 'delete-modal') deleteTarget = { type: null, id: null }; };
+
+
+        // ==========================================
+        // LEVEL 1: DASHBOARD
+        // ==========================================
+        const renderDashboardTrips = () => {
+            const container = document.getElementById('trips-container');
+            container.innerHTML = '';
+            if (trips.length === 0) {
+                container.classList.add('hidden'); document.getElementById('empty-state').classList.remove('hidden'); return;
+            }
+            container.classList.remove('hidden'); document.getElementById('empty-state').classList.add('hidden');
+
+            [...trips].sort((a, b) => {
+                const isACompleted = a.status === 'completed';
+                const isBCompleted = b.status === 'completed';
+                if (isACompleted && !isBCompleted) return 1;
+                if (!isACompleted && isBCompleted) return -1;
+                if (isACompleted) return new Date(b.startDate) - new Date(a.startDate);
+                return new Date(a.startDate) - new Date(b.startDate);
+            }).forEach(trip => {
+                const locationName = trip.destination.split(',')[0].trim();
+                const searchKeyword = encodeURIComponent(locationName || 'travel');
+                const dynamicImage = `https://loremflickr.com/600/400/${searchKeyword},landmark/all`;
+                const imgUrl = trip.imageUrl || dynamicImage;
+
+                container.innerHTML += `
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 transition-all duration-300 group flex flex-col h-full cursor-pointer" onclick="viewTripOverview('${trip.id}')">
+                        <div class="relative h-48 overflow-hidden bg-gray-200 dark:bg-gray-700">
+                            <img src="${imgUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src='https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600'">
+                            <div class="absolute top-3 right-3 flex gap-2">${getStatusBadge(trip.status)}</div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-4">
+                                <div class="flex gap-2">
+                                    <button onclick="event.stopPropagation(); openTripModal('${trip.id}')" class="p-2 bg-white/90 dark:bg-gray-800/90 rounded-lg hover:bg-white dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors shadow-sm" title="Edit Trip"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                    <button onclick="event.stopPropagation(); triggerDelete('trip', '${trip.id}')" class="p-2 bg-white/90 dark:bg-gray-800/90 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 transition-colors shadow-sm" title="Delete Trip"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-5 flex flex-col flex-grow">
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 line-clamp-1">${trip.destination}</h3>
+                            <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4"><i data-lucide="calendar" class="w-4 h-4 mr-2"></i><span>${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}</span></div>
+                        </div>
+                    </div>`;
+            });
+            lucide.createIcons();
+        };
+
+        const openTripModal = (id = null) => {
+            document.getElementById('trip-form').reset();
+            const startInput = document.getElementById('trip-start-date');
+            const endInput = document.getElementById('trip-end-date');
+            endInput.min = ''; // Reset min validation on open
+
+            if (id) {
+                document.getElementById('trip-modal-title').textContent = 'Edit Trip';
+                const trip = trips.find(t => t.id === id);
+                document.getElementById('trip-id').value = trip.id;
+                document.getElementById('trip-destination').value = trip.destination;
+                
+                startInput.value = trip.startDate.split('T')[0]; 
+                endInput.value = trip.endDate.split('T')[0]; 
+                document.getElementById('trip-image-url').value = trip.imageUrl;
+                
+                validateTripDates(); // Set min constraint based on loaded start date
+            } else {
+                document.getElementById('trip-modal-title').textContent = 'Add New Trip';
+                document.getElementById('trip-id').value = '';
+            }
+            openModal('trip-modal');
+        };
+
+        const saveTrip = async () => {
+            const form = document.getElementById('trip-form');
+            if (!form.checkValidity()) return form.reportValidity();
+            
+            const start = document.getElementById('trip-start-date').value;
+            const end = document.getElementById('trip-end-date').value;
+
+            if (new Date(end) < new Date(start)) {
+                showToast("End date cannot be before the start date.", true);
+                return;
+            }
+
+            showLoader("Saving trip to database...");
+
+            const id = document.getElementById('trip-id').value;
+            const existingTrip = id ? trips.find(t => t.id === id) : null;
+            
+            const tripData = {
+                id: id || generateId(),
+                destination: document.getElementById('trip-destination').value,
+                startDate: start,
+                endDate: end,
+                imageUrl: document.getElementById('trip-image-url').value,
+                status: existingTrip ? existingTrip.status : 'upcoming', 
+                flights: existingTrip ? existingTrip.flights || [] : [],
+                itinerary: existingTrip ? existingTrip.itinerary || [] : [],
+                expenses: existingTrip ? existingTrip.expenses || [] : [],
+                users: existingTrip ? existingTrip.users : currentUser
+            };
+
+            if (id) {
+                trips = trips.map(t => t.id === id ? tripData : t);
+            } else { 
+                trips.push(tripData); 
+            }
+            
+            await syncTripToDatabase(tripData);
+
+            hideLoader();
+            closeModal('trip-modal');
+            currentTripId ? renderTripOverview() : renderDashboardTrips();
+        };
+
+
+        // ==========================================
+        // LEVEL 2: TRIP OVERVIEW
+        // ==========================================
+        const renderTripOverview = () => {
+            if (!currentTripId) return;
+            const trip = trips.find(t => t.id === currentTripId);
+            
+            document.getElementById('overview-destination').textContent = trip.destination;
+            document.getElementById('overview-dates-text').textContent = `${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}`;
+            
+            // Render Collaborators Avatars
+            const collaborators = (trip.users || currentUser).split(',').map(u => u.trim()).filter(Boolean);
+            const avatarsHtml = collaborators.map(user => 
+                `<img class="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100" src="https://ui-avatars.com/api/?name=${user}&background=random&color=fff" title="${user}" alt="${user}">`
+            ).join('');
+
+            document.getElementById('overview-collaborators').innerHTML = `
+                <div class="flex items-center mt-3">
+                    <div class="flex -space-x-2 mr-3">
+                        ${avatarsHtml}
+                    </div>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">${collaborators.length} collaborator${collaborators.length !== 1 ? 's' : ''}</span>
+                </div>
+            `;
+
+            const statusSelectHtml = `
+                <select onchange="updateTripStatus(this.value)" class="pl-3 pr-8 py-1.5 text-sm font-medium rounded-full outline-none transition-colors cursor-pointer border ${
+                    trip.status === 'completed' 
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800 focus:ring-2 focus:ring-emerald-500' 
+                    : 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 focus:ring-2 focus:ring-blue-500'
+                }">
+                    <option value="upcoming" class="dark:bg-gray-800" ${trip.status !== 'completed' ? 'selected' : ''}>Upcoming</option>
+                    <option value="completed" class="dark:bg-gray-800" ${trip.status === 'completed' ? 'selected' : ''}>Completed</option>
+                </select>
+            `;
+            
+            document.getElementById('overview-status-badge').innerHTML = `
+                <div class="flex items-center gap-3">
+                    <button onclick="openShareModal()" class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors shadow-sm">
+                        <i data-lucide="share-2" class="w-4 h-4"></i> Share
+                    </button>
+                    ${statusSelectHtml}
+                </div>
+            `;
+
+            const flightCount = trip.flights ? trip.flights.length : 0;
+            const itineraryCount = trip.itinerary ? trip.itinerary.length : 0;
+            
+            const nominalRate = getNominalRate(trip);
+            const actualExpenses = (trip.expenses || []).filter(e => e.id !== '_NOMINAL_RATE_');
+            
+            document.getElementById('summary-flights').textContent = `${flightCount} booked`;
+            document.getElementById('summary-itinerary').textContent = `${itineraryCount} activities`;
+            const totalExp = actualExpenses.reduce((sum, e) => {
+                const isNominal = e.useNominal !== false;
+                const rate = isNominal ? nominalRate : parseFloat(e.rate || 1);
+                const validRate = rate > 0 ? rate : 1;
+                return sum + (parseFloat(e.amount) / validRate);
+            }, 0);
+            document.getElementById('summary-expenses').textContent = `SGD$${totalExp.toFixed(2)} spent`;
+            
+            lucide.createIcons();
+        };
+
+        // ==========================================
+        // LEVEL 3: CATEGORY DETAILS
+        // ==========================================
+        const renderCategoryDetails = () => {
+            if (!currentTripId || !currentCategory) return;
+            const trip = trips.find(t => t.id === currentTripId);
+            const container = document.getElementById('category-content-container');
+            const headerTitle = document.getElementById('category-header-title');
+            const headerIcon = document.getElementById('category-header-icon');
+            const addBtn = document.getElementById('add-item-btn');
+            
+            document.getElementById('category-back-text').textContent = `Back to ${trip.destination} Overview`;
+            container.innerHTML = ''; 
+
+            if (currentCategory === 'flights') {
+                headerTitle.textContent = 'Flights';
+                headerIcon.className = 'p-3 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400';
+                headerIcon.innerHTML = '<i data-lucide="plane" class="w-6 h-6"></i>';
+                addBtn.className = 'inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:ring-blue-500';
+                addBtn.onclick = () => openFlightModal();
+                addBtn.classList.remove('hidden');
+                document.getElementById('category-header-subtitle').textContent = 'Manage items';
+                document.getElementById('add-item-text').textContent = 'Add Flight';
+
+                const flights = trip.flights || [];
+                if (flights.length === 0) container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">No flights added yet.</p>';
+                else {
+                    const list = document.createElement('div'); list.className = 'space-y-4';
+                    [...flights].sort((a,b) => new Date(a.departure) - new Date(b.departure)).forEach((f, index) => {
+                        list.innerHTML += `
+                            <div class="flex flex-col md:flex-row md:items-start justify-between p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-500 transition-colors group">
+                                <div class="mb-4 md:mb-0 w-full">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-md uppercase tracking-wider">Flight ${index + 1}</span>
+                                        <h4 class="font-bold text-gray-900 dark:text-white text-lg">${f.airline}</h4>
+                                    </div>
+                                    <div class="flex flex-col sm:flex-row sm:gap-6 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <div class="flex items-center gap-2">
+                                            <i data-lucide="plane-takeoff" class="w-4 h-4 text-blue-500 dark:text-blue-400"></i> 
+                                            ${formatDateTime(f.departure)}
+                                            ${f.depTerminal ? `<span class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded text-xs font-bold ml-1">T${f.depTerminal.replace(/^t/i, '').trim()}</span>` : ''}
+                                        </div>
+                                        <div class="flex items-center gap-2 mt-1 sm:mt-0">
+                                            <i data-lucide="plane-landing" class="w-4 h-4 text-blue-500 dark:text-blue-400"></i> 
+                                            ${formatDateTime(f.arrival)}
+                                            ${f.arrTerminal ? `<span class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded text-xs font-bold ml-1">T${f.arrTerminal.replace(/^t/i, '').trim()}</span>` : ''}
+                                        </div>
+                                    </div>
+                                    ${f.connection ? `
+                                    <div class="mt-4 pt-4 border-t border-dashed border-gray-300 dark:border-gray-600 relative ml-2">
+                                        <div class="absolute -top-3 left-0 bg-gray-50 dark:bg-gray-700/30 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-600"><i data-lucide="link" class="w-3 h-3"></i> Connection</div>
+                                        <div class="flex items-center gap-2 mb-1 mt-1">
+                                            <h4 class="font-bold text-gray-800 dark:text-gray-200 text-md">${f.connection.airline}</h4>
+                                        </div>
+                                        <div class="flex flex-col sm:flex-row sm:gap-6 text-sm text-gray-600 dark:text-gray-400">
+                                            <div class="flex items-center gap-2">
+                                                <i data-lucide="plane-takeoff" class="w-4 h-4 text-indigo-500 dark:text-indigo-400"></i> 
+                                                ${formatDateTime(f.connection.departure)}
+                                                ${f.connection.depTerminal ? `<span class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded text-xs font-bold ml-1">T${f.connection.depTerminal.replace(/^t/i, '').trim()}</span>` : ''}
+                                            </div>
+                                            <div class="flex items-center gap-2 mt-1 sm:mt-0">
+                                                <i data-lucide="plane-landing" class="w-4 h-4 text-indigo-500 dark:text-indigo-400"></i> 
+                                                ${formatDateTime(f.connection.arrival)}
+                                                ${f.connection.arrTerminal ? `<span class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded text-xs font-bold ml-1">T${f.connection.arrTerminal.replace(/^t/i, '').trim()}</span>` : ''}
+                                            </div>
+                                        </div>
+                                    </div>` : ''}
+                                    ${f.notes ? `<p class="text-gray-600 dark:text-gray-300 text-sm mt-3 bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 whitespace-pre-wrap break-words">${linkify(f.notes)}</p>` : ''}
+                                </div>
+                                <div class="flex gap-2 justify-end shrink-0 ml-4">
+                                    <button onclick="openFlightModal('${f.id}')" class="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"><i data-lucide="edit-2" class="w-5 h-5"></i></button>
+                                    <button onclick="triggerDelete('flight', '${f.id}')" class="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                </div>
+                            </div>`;
+                    });
+                    container.appendChild(list);
+                }
+            } 
+            else if (currentCategory === 'itinerary') {
+                headerTitle.textContent = 'Itinerary';
+                headerIcon.className = 'p-3 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400';
+                headerIcon.innerHTML = '<i data-lucide="map-pin" class="w-6 h-6"></i>';
+                addBtn.className = 'hidden'; 
+                document.getElementById('category-header-subtitle').textContent = 'Select a day to view activities';
+
+                const dates = getDatesBetween(trip.startDate, trip.endDate);
+                const itinerary = trip.itinerary || [];
+                
+                if (dates.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">Please set valid trip start and end dates to view itinerary days.</p>';
+                } else {
+                    const grid = document.createElement('div');
+                    grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
+                    
+                    dates.forEach((date, index) => {
+                        const dayActivities = itinerary.filter(i => i.time.startsWith(date));
+                        grid.innerHTML += `
+                            <div onclick="viewDay('${date}', ${index + 1})" class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-amber-300 dark:hover:border-amber-500 cursor-pointer transition-all group">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="font-bold text-lg text-gray-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Day ${index + 1}</h3>
+                                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-amber-500 dark:group-hover:text-amber-400 transform group-hover:translate-x-1 transition-all"></i>
+                                </div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">${formatDate(date)}</p>
+                                <div class="inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full text-xs font-medium">
+                                    <i data-lucide="list" class="w-3.5 h-3.5"></i>
+                                    ${dayActivities.length} activities
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    const scheduledIds = new Set();
+                    dates.forEach(date => itinerary.filter(i => i.time.startsWith(date)).forEach(i => scheduledIds.add(i.id)));
+                    const unscheduled = itinerary.filter(i => !scheduledIds.has(i.id));
+                    
+                    if (unscheduled.length > 0) {
+                        grid.innerHTML += `
+                            <div onclick="viewDay('unscheduled', 'Other')" class="bg-gray-50 dark:bg-gray-700/50 p-5 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-gray-400 dark:hover:border-gray-400 cursor-pointer transition-all group">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="font-bold text-lg text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Other Dates</h3>
+                                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 transform group-hover:translate-x-1 transition-all"></i>
+                                </div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Activities outside trip dates</p>
+                                <div class="inline-flex items-center gap-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-full text-xs font-medium">
+                                    <i data-lucide="list" class="w-3.5 h-3.5"></i>
+                                    ${unscheduled.length} activities
+                                </div>
+                            </div>
+                        `;
+                    }
+                    container.appendChild(grid);
+                }
+            }
+            else if (currentCategory === 'expenses') {
+                headerTitle.textContent = 'Expenses';
+                headerIcon.className = 'p-3 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400';
+                headerIcon.innerHTML = '<i data-lucide="dollar-sign" class="w-6 h-6"></i>';
+                addBtn.className = 'inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 focus:ring-emerald-500';
+                addBtn.onclick = () => openExpenseModal();
+                addBtn.classList.remove('hidden');
+                document.getElementById('category-header-subtitle').textContent = 'Manage items';
+                document.getElementById('add-item-text').textContent = 'Add Expense';
+
+                const nominalRate = getNominalRate(trip);
+                const actualExpenses = (trip.expenses || []).filter(e => e.id !== '_NOMINAL_RATE_');
+                
+                const localTotal = actualExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+                const total = actualExpenses.reduce((sum, e) => {
+                    const isNominal = e.useNominal !== false;
+                    const rate = isNominal ? nominalRate : parseFloat(e.rate || 1);
+                    const validRate = rate > 0 ? rate : 1;
+                    return sum + (parseFloat(e.amount) / validRate);
+                }, 0);
+                
+                container.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-xl mb-6 gap-4">
+                        <div>
+                            <span class="text-emerald-800 dark:text-emerald-400 font-medium block mb-1">Trip Nominal Rate</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-emerald-600 dark:text-emerald-500 font-medium">SGD$1 =</span>
+                                <input type="number" id="trip-nominal-rate" step="0.000001" min="0.000001" value="${nominalRate}" class="w-24 px-2 py-1 text-sm bg-white dark:bg-gray-800 border border-emerald-200 dark:border-emerald-700 rounded-md focus:ring-emerald-500 dark:text-white outline-none" onchange="updateNominalRate(this.value)">
+                                <span class="text-sm text-emerald-600 dark:text-emerald-500 font-medium">Local</span>
+                            </div>
+                        </div>
+                        <div class="text-left sm:text-right">
+                            <span class="text-emerald-800 dark:text-emerald-400 font-medium block mb-1">Total Trip Expenses</span>
+                            <span class="text-2xl font-bold text-emerald-700 dark:text-emerald-500 block">SGD$${total.toFixed(2)}</span>
+                            <span class="text-sm font-medium text-emerald-600 dark:text-emerald-400/80">${localTotal.toFixed(2)} Local</span>
+                        </div>
+                    </div>
+                `;
+
+                if (actualExpenses.length === 0) container.innerHTML += '<p class="text-gray-500 dark:text-gray-400 text-center py-4">No expenses recorded yet.</p>';
+                else {
+                    const list = document.createElement('div'); list.className = 'space-y-3';
+                    actualExpenses.forEach(e => {
+                        const isNominal = e.useNominal !== false;
+                        const rate = isNominal ? nominalRate : parseFloat(e.rate || 1);
+                        const validRate = rate > 0 ? rate : 1;
+                        const sgdAmount = (parseFloat(e.amount) / validRate).toFixed(2);
+                        const rateLabel = isNominal ? 'Nominal' : 'Custom';
+                        const originalAmountHtml = rate !== 1 ? `<div class="text-xs text-gray-500 dark:text-gray-400 text-right mt-0.5" title="${rateLabel} Rate: ${rate}">${parseFloat(e.amount).toFixed(2)} ÷ ${rate}</div>` : '';
+
+                        list.innerHTML += `
+                            <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-500 transition-colors group">
+                                <span class="font-medium text-gray-900 dark:text-white">${e.description}</span>
+                                <div class="flex items-center gap-4">
+                                    <div class="flex flex-col items-end justify-center">
+                                        <span class="font-bold text-gray-900 dark:text-white text-lg">SGD$${sgdAmount}</span>
+                                        ${originalAmountHtml}
+                                    </div>
+                                    <div class="flex gap-1">
+                                        <button onclick="openExpenseModal('${e.id}')" class="p-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                        <button onclick="triggerDelete('expense', '${e.id}')" class="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    </div>
+                                </div>
+                            </div>`;
+                    });
+                    container.appendChild(list);
+                }
+            }
+            lucide.createIcons();
+        };
+
+
+        // ==========================================
+        // LEVEL 4: DAY DETAILS
+        // ==========================================
+        const renderDayDetails = () => {
+            if (!currentTripId || !currentDayDate) return;
+            const trip = trips.find(t => t.id === currentTripId);
+            const container = document.getElementById('day-content-container');
+            
+            document.getElementById('day-header-title').textContent = currentDayDate === 'unscheduled' ? 'Other Dates' : `Day ${currentDayNumber}`;
+            document.getElementById('day-header-subtitle').textContent = currentDayDate === 'unscheduled' ? 'Activities outside planned dates' : formatDate(currentDayDate);
+            
+            container.innerHTML = '';
+            
+            let dayActivities = [];
+            const itinerary = trip.itinerary || [];
+            if (currentDayDate === 'unscheduled') {
+                const dates = getDatesBetween(trip.startDate, trip.endDate);
+                const scheduledIds = new Set();
+                dates.forEach(date => itinerary.filter(i => i.time.startsWith(date)).forEach(i => scheduledIds.add(i.id)));
+                dayActivities = itinerary.filter(i => !scheduledIds.has(i.id));
+            } else {
+                dayActivities = itinerary.filter(i => i.time.startsWith(currentDayDate));
+            }
+
+            if (dayActivities.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">No activities planned for this day.</p>';
+            } else {
+                const list = document.createElement('div'); list.className = 'pl-2';
+                [...dayActivities].sort((a,b) => new Date(a.time) - new Date(b.time)).forEach(item => {
+                    list.innerHTML += `
+                        <div class="relative pl-10 pb-6 timeline-item group">
+                            <div class="timeline-line"></div>
+                            <div class="absolute left-0 top-1.5 w-[20px] h-[20px] rounded-full bg-amber-100 dark:bg-amber-900 border-4 border-white dark:border-gray-800 shadow-sm z-10 flex items-center justify-center transition-colors">
+                                <div class="w-2.5 h-2.5 bg-amber-500 dark:bg-amber-400 rounded-full"></div>
+                            </div>
+                            <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-700 p-4 hover:border-amber-200 dark:hover:border-amber-500 transition-colors">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h4 class="font-bold text-gray-900 dark:text-white text-lg">${item.activity}</h4>
+                                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.activity)}" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors" title="Search on Google Maps" onclick="event.stopPropagation()">
+                                                <i data-lucide="map-pin" class="w-4 h-4"></i>
+                                            </a>
+                                        </div>
+                                        <div class="text-sm font-medium text-amber-600 dark:text-amber-400 mt-1">${formatDateTime(item.time)}</div>
+                                    </div>
+                                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onclick="openItineraryModal('${item.id}')" class="p-1.5 text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 rounded-lg"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                        <button onclick="triggerDelete('itinerary', '${item.id}')" class="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    </div>
+                                </div>
+                                ${item.notes ? `<p class="text-gray-600 dark:text-gray-300 text-sm mt-3 bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 whitespace-pre-wrap break-words">${linkify(item.notes)}</p>` : ''}
+                            </div>
+                        </div>`;
+                });
+                container.appendChild(list);
+            }
+            lucide.createIcons();
+        };
+
+
+        // --- Category Modals Logic ---
+        const openFlightModal = (id = null) => {
+            const form = document.getElementById('flight-form'); form.reset();
+            const trip = trips.find(t => t.id === currentTripId);
+            document.getElementById('flight-arrival-date').min = ''; // Reset validation
+
+            if (id) {
+                document.getElementById('flight-modal-title').textContent = 'Edit Flight';
+                const f = (trip.flights || []).find(i => i.id === id);
+                document.getElementById('flight-id').value = f.id; 
+                document.getElementById('flight-airline').value = f.airline;
+                
+                const depParts = f.departure ? f.departure.split('T') : ['',''];
+                document.getElementById('flight-departure-date').value = depParts[0]; 
+                document.getElementById('flight-departure-time').value = depParts[1] || ''; 
+                document.getElementById('flight-dep-terminal').value = f.depTerminal || '';
+                
+                const arrParts = f.arrival ? f.arrival.split('T') : ['',''];
+                document.getElementById('flight-arrival-date').value = arrParts[0];
+                document.getElementById('flight-arrival-time').value = arrParts[1] || '';
+                document.getElementById('flight-arr-terminal').value = f.arrTerminal || '';
+                document.getElementById('flight-notes').value = f.notes || '';
+                
+                const hasConnCheckbox = document.getElementById('flight-has-connection');
+                if (f.connection) {
+                    hasConnCheckbox.checked = true;
+                    document.getElementById('conn-airline').value = f.connection.airline;
+                    
+                    const cDepParts = f.connection.departure ? f.connection.departure.split('T') : ['',''];
+                    document.getElementById('conn-departure-date').value = cDepParts[0];
+                    document.getElementById('conn-departure-time').value = cDepParts[1] || '';
+                    document.getElementById('conn-dep-terminal').value = f.connection.depTerminal || '';
+                    
+                    const cArrParts = f.connection.arrival ? f.connection.arrival.split('T') : ['',''];
+                    document.getElementById('conn-arrival-date').value = cArrParts[0];
+                    document.getElementById('conn-arrival-time').value = cArrParts[1] || '';
+                    document.getElementById('conn-arr-terminal').value = f.connection.arrTerminal || '';
+                } else {
+                    hasConnCheckbox.checked = false;
+                }
+                
+                toggleConnectionFields();
+                validateFlightDates();
+            } else { 
+                document.getElementById('flight-modal-title').textContent = 'Add Flight'; 
+                document.getElementById('flight-id').value = ''; 
+                document.getElementById('flight-has-connection').checked = false;
+                toggleConnectionFields();
+                validateFlightDates();
+            }
+            openModal('flight-modal');
+        };
+        
+        const saveFlight = async () => {
+            if (!document.getElementById('flight-form').checkValidity()) return document.getElementById('flight-form').reportValidity();
+            
+            const depDate = document.getElementById('flight-departure-date').value;
+            const depTime = document.getElementById('flight-departure-time').value;
+            const dep = `${depDate}T${depTime}`;
+            
+            const arrDate = document.getElementById('flight-arrival-date').value;
+            const arrTime = document.getElementById('flight-arrival-time').value;
+            const arr = `${arrDate}T${arrTime}`;
+            
+            const hasConn = document.getElementById('flight-has-connection').checked;
+
+            if (new Date(arr) < new Date(dep)) {
+                showToast("Arrival time cannot be before departure time.", true);
+                return;
+            }
+            
+            let connData = null;
+            let finalArrival = arr;
+
+            if (hasConn) {
+                const connDepDate = document.getElementById('conn-departure-date').value;
+                const connDepTime = document.getElementById('conn-departure-time').value;
+                const connDep = `${connDepDate}T${connDepTime}`;
+                
+                const connArrDate = document.getElementById('conn-arrival-date').value;
+                const connArrTime = document.getElementById('conn-arrival-time').value;
+                const connArr = `${connArrDate}T${connArrTime}`;
+                
+                if (new Date(connDep) < new Date(arr)) {
+                    showToast("Connecting flight departure cannot be before first flight arrival.", true); return;
+                }
+                if (new Date(connArr) < new Date(connDep)) {
+                    showToast("Connecting flight arrival cannot be before its departure.", true); return;
+                }
+                finalArrival = connArr;
+                connData = {
+                    airline: document.getElementById('conn-airline').value,
+                    departure: connDep,
+                    depTerminal: document.getElementById('conn-dep-terminal').value,
+                    arrival: connArr,
+                    arrTerminal: document.getElementById('conn-arr-terminal').value
+                };
+            }
+
+            const trip = trips.find(t => t.id === currentTripId); 
+
+            // Trip Boundary Validation
+            const tripStart = new Date(trip.startDate);
+            tripStart.setHours(0, 0, 0, 0);
+            const tripEnd = new Date(trip.endDate);
+            tripEnd.setHours(23, 59, 59, 999);
+
+            if (new Date(dep) < tripStart || new Date(finalArrival) > tripEnd) {
+                showToast(`All flights must be within trip dates (${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}).`, true);
+                return;
+            }
+
+            const id = document.getElementById('flight-id').value;
+            const data = { 
+                id: id || generateId(), 
+                airline: document.getElementById('flight-airline').value, 
+                departure: dep, 
+                depTerminal: document.getElementById('flight-dep-terminal').value,
+                arrival: arr,
+                arrTerminal: document.getElementById('flight-arr-terminal').value,
+                notes: document.getElementById('flight-notes').value,
+                connection: connData
+            };
+            
+            // Create a temporary array to validate sequence overlaps before saving
+            let updatedFlights = trip.flights ? [...trip.flights] : [];
+            if (id) {
+                updatedFlights = updatedFlights.map(f => f.id === id ? data : f);
+            } else {
+                updatedFlights.push(data);
+            }
+            
+            // Sort chronologically by departure
+            updatedFlights.sort((a,b) => new Date(a.departure) - new Date(b.departure));
+            
+            // Sequence Validation: Ensure no flight departs before the previous one arrives
+            for (let i = 1; i < updatedFlights.length; i++) {
+                const prevFlight = updatedFlights[i-1];
+                const prevFinalArrival = prevFlight.connection ? prevFlight.connection.arrival : prevFlight.arrival;
+                if (new Date(updatedFlights[i].departure) < new Date(prevFinalArrival)) {
+                    const prevAirlineStr = prevFlight.connection ? prevFlight.connection.airline : prevFlight.airline;
+                    showToast(`Conflict: '${updatedFlights[i].airline}' departs before '${prevAirlineStr}' arrives!`, true);
+                    return; // Block save entirely
+                }
+            }
+
+            showLoader("Saving flight...");
+            trip.flights = updatedFlights; // Safe to save the correctly sequenced array
+            
+            await syncTripToDatabase(trip);
+            
+            hideLoader();
+            closeModal('flight-modal'); renderCategoryDetails();
+        };
+
+        const openItineraryModal = (id = null) => {
+            const form = document.getElementById('itinerary-form'); form.reset();
+            const trip = trips.find(t => t.id === currentTripId);
+            
+            // Constrain date picker to trip window
+            const itinDateInput = document.getElementById('itinerary-date');
+            const tStart = trip.startDate.split('T')[0];
+            const tEnd = trip.endDate.split('T')[0];
+            itinDateInput.min = tStart;
+            itinDateInput.max = tEnd;
+
+            if (id) {
+                document.getElementById('itinerary-modal-title').textContent = 'Edit Activity';
+                const i = (trip.itinerary || []).find(x => x.id === id);
+                document.getElementById('itinerary-id').value = i.id; 
+                document.getElementById('itinerary-activity').value = i.activity;
+                
+                const timeParts = i.time ? i.time.split('T') : ['',''];
+                document.getElementById('itinerary-date').value = timeParts[0];
+                document.getElementById('itinerary-time').value = timeParts[1] || '';
+                
+                document.getElementById('itinerary-notes').value = i.notes || '';
+            } else { 
+                document.getElementById('itinerary-modal-title').textContent = 'Add Activity'; 
+                document.getElementById('itinerary-id').value = ''; 
+                if (currentDayDate && currentDayDate !== 'unscheduled') {
+                    document.getElementById('itinerary-date').value = currentDayDate;
+                    document.getElementById('itinerary-time').value = '10:00';
+                } else {
+                    document.getElementById('itinerary-date').value = '';
+                    document.getElementById('itinerary-time').value = '';
+                }
+            }
+            openModal('itinerary-modal');
+        };
+        
+        const saveItinerary = async () => {
+            if (!document.getElementById('itinerary-form').checkValidity()) return document.getElementById('itinerary-form').reportValidity();
+            
+            showLoader("Saving activity...");
+            const trip = trips.find(t => t.id === currentTripId); 
+            const id = document.getElementById('itinerary-id').value;
+            
+            const timeVal = document.getElementById('itinerary-date').value + 'T' + document.getElementById('itinerary-time').value;
+            
+            const data = { 
+                id: id || generateId(), 
+                activity: document.getElementById('itinerary-activity').value, 
+                time: timeVal, 
+                notes: document.getElementById('itinerary-notes').value 
+            };
+            
+            trip.itinerary = trip.itinerary || [];
+            id ? trip.itinerary = trip.itinerary.map(i => i.id === id ? data : i) : trip.itinerary.push(data);
+            
+            await syncTripToDatabase(trip);
+
+            hideLoader();
+            closeModal('itinerary-modal'); 
+            currentDayDate ? renderDayDetails() : renderCategoryDetails();
+        };
+
+        window.updateNominalRate = async (val) => {
+            if (!currentTripId) return;
+            const trip = trips.find(t => t.id === currentTripId);
+            const newRate = parseFloat(val) || 1.00;
+            
+            trip.expenses = trip.expenses || [];
+            const rateObj = trip.expenses.find(e => e.id === '_NOMINAL_RATE_');
+            if (rateObj) rateObj.rate = newRate;
+            else trip.expenses.push({ id: '_NOMINAL_RATE_', rate: newRate });
+            
+            showLoader("Updating nominal rate...");
+            await syncTripToDatabase(trip);
+            hideLoader();
+            
+            renderCategoryDetails(); 
+        };
+
+        const calculateSGD = () => {
+            const amount = parseFloat(document.getElementById('expense-amount').value) || 0;
+            const rate = parseFloat(document.getElementById('expense-rate').value) || 0;
+            const validRate = rate > 0 ? rate : 1; 
+            const sgd = amount / validRate;
+            document.getElementById('expense-sgd-calc').textContent = `SGD$ ${sgd.toFixed(2)}`;
+        };
+
+        const toggleNominalRate = () => {
+            const useNominal = document.getElementById('expense-use-nominal').checked;
+            const rateInput = document.getElementById('expense-rate');
+            
+            if (useNominal) {
+                const trip = trips.find(t => t.id === currentTripId);
+                rateInput.value = getNominalRate(trip);
+                rateInput.disabled = true;
+                rateInput.classList.add('bg-gray-100', 'text-gray-500', 'dark:bg-gray-600', 'dark:text-gray-400', 'cursor-not-allowed');
+            } else {
+                rateInput.disabled = false;
+                rateInput.classList.remove('bg-gray-100', 'text-gray-500', 'dark:bg-gray-600', 'dark:text-gray-400', 'cursor-not-allowed');
+            }
+            calculateSGD();
+        };
+
+        const openExpenseModal = (id = null) => {
+            const form = document.getElementById('expense-form'); form.reset();
+            const trip = trips.find(t => t.id === currentTripId);
+            const nominalRate = getNominalRate(trip);
+
+            if (id) {
+                document.getElementById('expense-modal-title').textContent = 'Edit Expense';
+                const actualExpenses = (trip.expenses || []).filter(e => e.id !== '_NOMINAL_RATE_');
+                const e = actualExpenses.find(x => x.id === id);
+                document.getElementById('expense-id').value = e.id; 
+                document.getElementById('expense-desc').value = e.description; 
+                document.getElementById('expense-amount').value = e.amount;
+                
+                const useNominal = e.useNominal !== false; 
+                document.getElementById('expense-use-nominal').checked = useNominal;
+                document.getElementById('expense-rate').value = useNominal ? nominalRate : (e.rate || 1.00);
+            } else { 
+                document.getElementById('expense-modal-title').textContent = 'Add Expense'; 
+                document.getElementById('expense-id').value = ''; 
+                document.getElementById('expense-use-nominal').checked = true;
+                document.getElementById('expense-rate').value = nominalRate;
+            }
+            toggleNominalRate();
+            openModal('expense-modal');
+        };
+
+        const saveExpense = async () => {
+            if (!document.getElementById('expense-form').checkValidity()) return document.getElementById('expense-form').reportValidity();
+            
+            showLoader("Saving expense...");
+            const trip = trips.find(t => t.id === currentTripId); 
+            const id = document.getElementById('expense-id').value;
+            const useNominal = document.getElementById('expense-use-nominal').checked;
+            
+            const data = { 
+                id: id || generateId(), 
+                description: document.getElementById('expense-desc').value, 
+                amount: parseFloat(document.getElementById('expense-amount').value).toFixed(2),
+                rate: parseFloat(document.getElementById('expense-rate').value).toFixed(6),
+                useNominal: useNominal
+            };
+            
+            trip.expenses = trip.expenses || [];
+            if (id) {
+                trip.expenses = trip.expenses.map(e => e.id === id ? data : e);
+            } else {
+                trip.expenses.push(data);
+            }
+            
+            await syncTripToDatabase(trip);
+
+            hideLoader();
+            closeModal('expense-modal'); renderCategoryDetails();
+        };
+
+        // --- Generic Delete ---
+        const triggerDelete = (type, id) => { deleteTarget = { type, id }; openModal('delete-modal'); };
+        
+        const confirmDelete = async () => {
+            const { type, id } = deleteTarget;
+            showLoader("Deleting item...");
+
+            if (type === 'trip') { 
+                trips = trips.filter(t => t.id !== id); 
+                await syncTripToDatabase({ id: id }, true); 
+                renderDashboardTrips(); 
+            } 
+            else if (currentTripId) {
+                const trip = trips.find(t => t.id === currentTripId);
+                if (type === 'flight') trip.flights = trip.flights.filter(f => f.id !== id);
+                if (type === 'itinerary') trip.itinerary = trip.itinerary.filter(i => i.id !== id);
+                if (type === 'expense') trip.expenses = trip.expenses.filter(e => e.id !== id);
+                
+                await syncTripToDatabase(trip);
+
+                if (currentDayDate && type === 'itinerary') {
+                    renderDayDetails();
+                } else {
+                    renderCategoryDetails();
+                }
+            }
+            hideLoader();
+            closeModal('delete-modal');
+        };
+
+        // --- Sharing Logic ---
+        const openShareModal = () => {
+            document.getElementById('share-username').value = '';
+            openModal('share-modal');
+        };
+
+        const submitShare = async (e) => {
+            if(e) e.preventDefault();
+            const shareWith = document.getElementById('share-username').value.trim();
+            if (!shareWith) return;
+
+            showLoader("Sharing trip...");
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'share', tripId: currentTripId, shareWith: shareWith, username: currentUser })
+                });
+                
+                const textResponse = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(textResponse);
+                } catch (parseError) {
+                    console.error("HTML Error received instead of JSON:", textResponse);
+                    throw new Error("Apps Script deployment error.");
+                }
+                
+                if (result.success) {
+                    const tripToUpdate = trips.find(t => t.id === currentTripId);
+                    if (tripToUpdate) {
+                        const currentUsers = tripToUpdate.users || currentUser;
+                        tripToUpdate.users = currentUsers + ', ' + shareWith;
+                        renderTripOverview(); 
+                    }
+                    showToast(result.message);
+                    closeModal('share-modal');
+                } else {
+                    showToast(result.message, true);
+                }
+            } catch (error) {
+                console.error("Error sharing trip:", error);
+                showToast("Failed to share trip.", true);
+            }
+            hideLoader();
+        };
+
+        // --- App Initialization (Check for Saved Session) ---
+        let savedSession = null;
+        try {
+            savedSession = localStorage.getItem('journeyLogUser');
+        } catch (e) {}
+
+        if (savedSession) {
+            loginUserUI(savedSession);
+        }
+
+    </script>
+</body>
+</html>
