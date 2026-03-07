@@ -6,16 +6,27 @@
     <title>Travel Itineraries</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tailwind Dark Mode Config -->
+    <!-- Tailwind Dark Mode & Session Config -->
     <script>
         tailwind.config = {
             darkMode: 'class',
         }
-        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark')
-        }
+        
+        // Dark Mode Check
+        try {
+            if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        } catch (e) {}
+
+        // Pre-check authentication to prevent UI flash
+        try {
+            if (localStorage.getItem('journeyLogUser')) {
+                document.documentElement.classList.add('is-authenticated');
+            }
+        } catch (e) {}
     </script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -50,6 +61,10 @@
             to { transform: translateY(0); opacity: 1; }
         }
         .toast-animate { animation: slideUp 0.3s ease-out forwards; }
+
+        /* Anti-Flash Auth CSS */
+        html.is-authenticated #auth-view { display: none !important; }
+        html.is-authenticated #app-wrapper { display: flex !important; }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col transition-colors duration-300">
@@ -472,10 +487,10 @@
 
             if (document.documentElement.classList.contains('dark')) {
                 document.documentElement.classList.remove('dark');
-                localStorage.setItem('color-theme', 'light');
+                try { localStorage.setItem('color-theme', 'light'); } catch(e) {}
             } else {
                 document.documentElement.classList.add('dark');
-                localStorage.setItem('color-theme', 'dark');
+                try { localStorage.setItem('color-theme', 'dark'); } catch(e) {}
             }
         });
 
@@ -548,7 +563,7 @@
 
         const loginUserUI = (username) => {
             currentUser = username;
-            localStorage.setItem('journeyLogUser', username); // Save session
+            try { localStorage.setItem('journeyLogUser', username); } catch(e) {}
             
             document.getElementById('nav-username').textContent = username;
             document.getElementById('nav-avatar').src = `https://ui-avatars.com/api/?name=${username}&background=0D8ABC&color=fff`;
@@ -557,6 +572,8 @@
             document.getElementById('app-wrapper').classList.remove('hidden');
             document.getElementById('app-wrapper').classList.add('flex');
             
+            document.documentElement.classList.add('is-authenticated'); // Ensure anti-flash CSS stays active
+            goBackToDashboard(); // Make sure user is explicitly routed to dashboard
             fetchTripsFromDatabase(); 
         };
 
@@ -602,7 +619,8 @@
         const logout = () => {
             currentUser = null;
             trips = [];
-            localStorage.removeItem('journeyLogUser'); // Clear session
+            try { localStorage.removeItem('journeyLogUser'); } catch(e) {}
+            document.documentElement.classList.remove('is-authenticated'); // Remove CSS anti-flash
             
             document.getElementById('app-wrapper').classList.add('hidden');
             document.getElementById('app-wrapper').classList.remove('flex');
@@ -1489,7 +1507,11 @@
         };
 
         // --- App Initialization (Check for Saved Session) ---
-        const savedSession = localStorage.getItem('journeyLogUser');
+        let savedSession = null;
+        try {
+            savedSession = localStorage.getItem('journeyLogUser');
+        } catch (e) {}
+
         if (savedSession) {
             loginUserUI(savedSession);
         }
