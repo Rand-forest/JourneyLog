@@ -1,4 +1,4 @@
-Option to reset password on login page
+Option to reset password on login page (Done)
 
 Included day/date information for each expense
 
@@ -6,3 +6,4 @@ Include optional Category free text field for each expense
 
 Include a dropdown for sharing itinerary with the list of users
 
+Include end time for activities
