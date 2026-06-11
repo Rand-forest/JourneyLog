@@ -478,6 +478,10 @@
                         </div>
                     </div>
                     <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Duration (Optional)</label>
+                        <input type="text" id="itinerary-duration" placeholder="e.g., 2 hours, 45 mins" class="w-full px-4 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 dark:text-white dark:placeholder-gray-500 outline-none transition-all">
+                    </div>
+                    <div>
                         <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Notes (Optional)</label>
                         <textarea id="itinerary-notes" rows="3" placeholder="Bring extra cash, open from 9am..." class="w-full px-4 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 dark:text-white dark:placeholder-gray-500 outline-none transition-all"></textarea>
                     </div>
@@ -1427,6 +1431,11 @@
                                         <i data-lucide="clock" class="w-3.5 h-3.5"></i>
                                         ${formatDateTime(item.time).split('•')[1].trim()}
                                     </div>
+                                    ${item.duration ? `
+                                    <div class="inline-flex items-center gap-1.5 text-sm font-bold text-gray-600 dark:text-gray-400 mt-2 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-md border border-gray-200 dark:border-gray-700 ml-2">
+                                        <i data-lucide="hourglass" class="w-3.5 h-3.5"></i>
+                                        ${item.duration}
+                                    </div>` : ''}
                                 </div>
                                 <div class="flex gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity border-t sm:border-0 border-gray-100 dark:border-gray-700 pt-3 sm:pt-0">
                                     <button onclick="openItineraryModal('${item.id}')" class="p-2 text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 bg-gray-50 hover:bg-amber-50 dark:bg-gray-900/30 dark:hover:bg-amber-900/30 rounded-xl transition-colors"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
@@ -1608,10 +1617,12 @@
                 const timeParts = i.time ? i.time.split('T') : ['',''];
                 document.getElementById('itinerary-date').value = timeParts[0];
                 document.getElementById('itinerary-time').value = timeParts[1] || '';
+                document.getElementById('itinerary-duration').value = i.duration || '';
                 document.getElementById('itinerary-notes').value = i.notes || '';
             } else { 
                 document.getElementById('itinerary-modal-title').textContent = 'Add Activity'; 
                 document.getElementById('itinerary-id').value = ''; 
+                document.getElementById('itinerary-duration').value = ''; 
                 if (currentDayDate && currentDayDate !== 'unscheduled') {
                     document.getElementById('itinerary-date').value = currentDayDate;
                     document.getElementById('itinerary-time').value = '10:00';
@@ -1635,6 +1646,7 @@
                 id: id || generateId(), 
                 activity: document.getElementById('itinerary-activity').value, 
                 time: timeVal, 
+                duration: document.getElementById('itinerary-duration').value,
                 notes: document.getElementById('itinerary-notes').value 
             };
             
