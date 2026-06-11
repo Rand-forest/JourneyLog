@@ -876,12 +876,17 @@
 
         const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2, 5);
         
+        // BUG FIX: Calculate dates accurately using local time methods instead of UTC toISOString() 
         const getDatesBetween = (startDate, endDate) => {
             const dates = [];
             let curr = new Date(startDate);
             const last = new Date(endDate);
+            
             while (curr <= last) {
-                dates.push(curr.toISOString().split('T')[0]);
+                const year = curr.getFullYear();
+                const month = String(curr.getMonth() + 1).padStart(2, '0');
+                const day = String(curr.getDate()).padStart(2, '0');
+                dates.push(`${year}-${month}-${day}`);
                 curr.setDate(curr.getDate() + 1);
             }
             return dates;
