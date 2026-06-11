@@ -16,9 +16,15 @@
                         brand: {
                             50: '#eff6ff',
                             100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
                             500: '#3b82f6',
                             600: '#2563eb',
                             700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                            950: '#172554',
                         }
                     }
                 }
@@ -1144,8 +1150,8 @@
             const statusSelectHtml = `
                 <select onchange="updateTripStatus(this.value)" class="pl-3 pr-8 py-2 text-sm font-bold rounded-xl outline-none transition-colors cursor-pointer border shadow-sm ${
                     trip.status === 'completed' 
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800 focus:ring-2 focus:ring-emerald-500' 
-                    : 'bg-brand-50 text-brand-800 border-brand-200 dark:bg-brand-900/30 dark:text-brand-400 dark:border-brand-800 focus:ring-2 focus:ring-brand-500'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/80 dark:text-emerald-200 dark:border-emerald-700 focus:ring-2 focus:ring-emerald-500' 
+                    : 'bg-brand-50 text-brand-800 border-brand-200 dark:bg-brand-900/80 dark:text-brand-200 dark:border-brand-700 focus:ring-2 focus:ring-brand-500'
                 }">
                     <option value="upcoming" class="dark:bg-gray-800" ${trip.status !== 'completed' ? 'selected' : ''}>Upcoming Trip</option>
                     <option value="completed" class="dark:bg-gray-800" ${trip.status === 'completed' ? 'selected' : ''}>Completed Trip</option>
@@ -1727,7 +1733,7 @@
                 document.getElementById('expense-rate').value = nominalRate;
             }
             toggleNominalRate();
-            openModal('expense-modal');
+            openExpenseModal('expense-modal');
         };
 
         const saveExpense = async () => {
