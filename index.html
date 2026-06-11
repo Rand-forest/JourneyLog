@@ -3,21 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Travel Itineraries</title>
+    <title>JourneyLog | Travel Itineraries</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Tailwind Dark Mode & Session Config -->
     <script>
         tailwind.config = {
             darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
         }
         
-        // Dark Mode Check
+        // Dark Mode Check - Default to Dark Mode
         try {
-            if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            } else {
+            if (localStorage.getItem('color-theme') === 'light') {
                 document.documentElement.classList.remove('dark');
+            } else {
+                document.documentElement.classList.add('dark');
             }
         } catch (e) {}
 
@@ -34,12 +47,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .modal-overlay { transition: opacity 0.2s ease-out; }
-        .modal-content { transition: transform 0.2s ease-out, opacity 0.2s ease-out; }
+        
+        /* Smoother Modal Transitions */
+        .modal-overlay { transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .modal-content { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .hide-modal { opacity: 0; pointer-events: none; }
-        .hide-modal .modal-content { transform: scale(0.95); opacity: 0; }
+        .hide-modal .modal-content { transform: translateY(10px) scale(0.95); opacity: 0; }
         .show-modal { opacity: 1; pointer-events: auto; }
-        .show-modal .modal-content { transform: scale(1); opacity: 1; }
+        .show-modal .modal-content { transform: translateY(0) scale(1); opacity: 1; }
         
         .timeline-line::before {
             content: '';
@@ -60,58 +75,69 @@
             from { transform: translateY(100%); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
-        .toast-animate { animation: slideUp 0.3s ease-out forwards; }
+        .toast-animate { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
         /* Anti-Flash Auth CSS */
         html.is-authenticated #auth-view { display: none !important; }
         html.is-authenticated #app-wrapper { display: flex !important; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        html.dark ::-webkit-scrollbar-thumb { background: #475569; }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col transition-colors duration-300">
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col transition-colors duration-300 selection:bg-brand-500 selection:text-white">
 
     <!-- Global Loader Overlay -->
-    <div id="global-loader" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm hidden">
-        <i data-lucide="loader-2" class="w-12 h-12 text-blue-600 dark:text-blue-400 animate-spin mb-4"></i>
-        <p id="loader-text" class="text-lg font-medium text-gray-800 dark:text-gray-200">Loading...</p>
+    <div id="global-loader" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-md hidden transition-opacity duration-300">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl flex flex-col items-center">
+            <i data-lucide="loader-2" class="w-10 h-10 text-brand-600 dark:text-brand-400 animate-spin mb-3"></i>
+            <p id="loader-text" class="text-sm font-semibold text-gray-800 dark:text-gray-200">Loading...</p>
+        </div>
     </div>
 
     <!-- Message Toast -->
-    <div id="toast-container" class="fixed bottom-6 right-6 z-[110] hidden flex-col gap-2"></div>
+    <div id="toast-container" class="fixed bottom-6 right-6 z-[110] hidden flex-col gap-2 max-w-sm w-full sm:w-auto"></div>
 
     <!-- ========================================== -->
     <!-- AUTHENTICATION VIEW                        -->
     <!-- ========================================== -->
-    <div id="auth-view" class="flex flex-col items-center justify-center min-h-screen p-4 absolute inset-0 bg-gray-50 dark:bg-gray-900 z-50">
-        <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-8">
+    <div id="auth-view" class="flex flex-col items-center justify-center min-h-screen p-4 absolute inset-0 bg-[url('https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?auto=format&fit=crop&w=2000&q=80')] bg-cover bg-center z-50">
+        <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm"></div>
+        <div class="w-full max-w-md bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700 p-8 relative z-10">
             <div class="flex items-center justify-center gap-2 mb-8">
-                <i data-lucide="plane" class="text-blue-600 dark:text-blue-400 h-8 w-8"></i>
-                <span class="font-bold text-3xl tracking-tight text-gray-900 dark:text-white">JourneyLog</span>
+                <div class="bg-brand-100 dark:bg-brand-900/30 p-3 rounded-xl">
+                    <i data-lucide="plane-takeoff" class="text-brand-600 dark:text-brand-400 h-8 w-8"></i>
+                </div>
+                <span class="font-black text-3xl tracking-tight text-gray-900 dark:text-white">JourneyLog</span>
             </div>
             
-            <h2 id="auth-title" class="text-xl font-bold text-gray-900 dark:text-white mb-6 text-center">Welcome Back</h2>
+            <h2 id="auth-title" class="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Welcome Back</h2>
             
             <form id="auth-form" class="space-y-5" onsubmit="handleAuth(event)">
                 <input type="hidden" id="auth-mode" value="login">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
-                    <input type="text" id="auth-username" required placeholder="Enter your username" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white outline-none transition-shadow">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Username</label>
+                    <input type="text" id="auth-username" required placeholder="e.g., kiasutraveller99" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 dark:text-white outline-none transition-all">
                 </div>
                 <div>
-                    <div class="flex justify-between items-center mb-1">
+                    <div class="flex justify-between items-center mb-1.5">
                         <label id="auth-password-label" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
-                        <button type="button" id="forgot-password-btn" onclick="setAuthMode('reset')" class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">Forgot password?</button>
+                        <button type="button" id="forgot-password-btn" onclick="setAuthMode('reset')" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 transition-colors">Forgot password?</button>
                     </div>
-                    <input type="password" id="auth-password" required placeholder="••••••••" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white outline-none transition-shadow">
+                    <input type="password" id="auth-password" required placeholder="••••••••" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 dark:text-white outline-none transition-all">
                 </div>
-                <button type="submit" id="auth-submit-btn" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 focus:ring-blue-500 transition-colors mt-2">
+                <button type="submit" id="auth-submit-btn" class="w-full py-3.5 px-4 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-brand-500 transition-all mt-4 transform active:scale-[0.98]">
                     Login
                 </button>
             </form>
             
-            <div class="mt-6 text-center">
+            <div class="mt-8 text-center pt-6 border-t border-gray-100 dark:border-gray-700">
                 <p class="text-sm text-gray-600 dark:text-gray-400">
                     <span id="auth-switch-text">Don't have an account?</span>
-                    <button onclick="setAuthMode('register')" id="auth-switch-btn" class="font-medium text-blue-600 dark:text-blue-400 hover:underline ml-1">Create one</button>
+                    <button onclick="setAuthMode('register')" id="auth-switch-btn" class="font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 ml-1 transition-colors">Create one</button>
                 </p>
             </div>
         </div>
@@ -120,23 +146,28 @@
     <!-- Application Wrapper (Hidden until logged in) -->
     <div id="app-wrapper" class="hidden flex-col min-h-screen">
         <!-- Navigation -->
-        <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-100 dark:border-gray-700 sticky top-0 z-30 transition-colors duration-300">
+        <nav class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg shadow-sm border-b border-gray-100 dark:border-gray-700 sticky top-0 z-30 transition-colors duration-300">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16 items-center">
                     <div class="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80" onclick="goBackToDashboard()">
-                        <i data-lucide="plane" class="text-blue-600 dark:text-blue-400 h-6 w-6"></i>
-                        <span class="font-bold text-xl tracking-tight text-gray-900 dark:text-white">JourneyLog</span>
+                        <div class="bg-brand-100 dark:bg-brand-900/30 p-2 rounded-lg">
+                            <i data-lucide="plane" class="text-brand-600 dark:text-brand-400 h-5 w-5"></i>
+                        </div>
+                        <span class="font-black text-xl tracking-tight text-gray-900 dark:text-white hidden sm:block">JourneyLog</span>
                     </div>
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 sm:gap-4">
                         <!-- Theme Toggle Button -->
-                        <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none rounded-lg text-sm p-2 transition-colors">
+                        <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none rounded-xl text-sm p-2.5 transition-colors">
                             <i id="theme-toggle-dark-icon" data-lucide="moon" class="hidden w-5 h-5"></i>
                             <i id="theme-toggle-light-icon" data-lucide="sun" class="hidden w-5 h-5"></i>
                         </button>
-                        <div class="flex items-center gap-2 border-l border-gray-200 dark:border-gray-700 pl-4">
-                            <span id="nav-username" class="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:block">User</span>
-                            <img class="h-8 w-8 rounded-full border border-gray-200 dark:border-gray-600 bg-gray-100" src="https://ui-avatars.com/api/?name=U&background=0D8ABC&color=fff" id="nav-avatar" alt="User avatar">
-                            <button onclick="logout()" class="ml-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 p-1 rounded-md transition-colors" title="Logout">
+                        <div class="flex items-center gap-3 border-l border-gray-200 dark:border-gray-700 pl-4">
+                            <img class="h-9 w-9 rounded-full border-2 border-brand-100 dark:border-gray-600 bg-gray-100" src="https://ui-avatars.com/api/?name=U&background=0D8ABC&color=fff" id="nav-avatar" alt="User avatar">
+                            <div class="hidden md:block">
+                                <p id="nav-username" class="text-sm font-bold text-gray-900 dark:text-white leading-none">User</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Traveller</p>
+                            </div>
+                            <button onclick="logout()" class="ml-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-xl transition-all" title="Logout">
                                 <i data-lucide="log-out" class="w-5 h-5"></i>
                             </button>
                         </div>
@@ -152,21 +183,25 @@
             <!-- VIEW 1: DASHBOARD (List of Trips)          -->
             <!-- ========================================== -->
             <div id="dashboard-view" class="block">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
+                <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8 gap-4">
                     <div>
-                        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">My Trips</h1>
-                        <p class="text-gray-500 dark:text-gray-400 mt-1">Manage and plan your upcoming adventures.</p>
+                        <h1 class="text-4xl font-black text-gray-900 dark:text-white tracking-tight">My Trips</h1>
+                        <p class="text-gray-500 dark:text-gray-400 mt-2 text-lg">Manage and plan your upcoming adventures.</p>
                     </div>
-                    <button onclick="openTripModal()" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                    <button onclick="openTripModal()" class="inline-flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transform active:scale-95">
                         <i data-lucide="plus" class="w-5 h-5"></i>
                         Add New Trip
                     </button>
                 </div>
                 <div id="trips-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
-                <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center">
-                    <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-full mb-4"><i data-lucide="map" class="w-12 h-12 text-blue-500 dark:text-blue-400"></i></div>
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">No trips planned yet</h3>
-                    <p class="text-gray-500 dark:text-gray-400 mt-1 max-w-sm">Click the "Add New Trip" button to start organizing your next adventure.</p>
+                
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden flex flex-col items-center justify-center py-20 px-4 text-center bg-white dark:bg-gray-800 rounded-3xl border border-dashed border-gray-300 dark:border-gray-700">
+                    <div class="bg-brand-50 dark:bg-brand-900/20 p-6 rounded-full mb-6">
+                        <i data-lucide="map" class="w-16 h-16 text-brand-500 dark:text-brand-400 animate-pulse"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white">No trips planned yet</h3>
+                    <p class="text-gray-500 dark:text-gray-400 mt-2 max-w-md mx-auto">Time to clear those annual leaves! Click the "Add New Trip" button to start organizing your next getaway to Bangkok, Bali, or beyond.</p>
                 </div>
             </div>
 
@@ -174,47 +209,50 @@
             <!-- VIEW 2: TRIP OVERVIEW (Summary Cards)      -->
             <!-- ========================================== -->
             <div id="trip-overview-view" class="hidden flex-col h-full min-h-[calc(100vh-8rem)]">
-                <div class="sticky top-16 z-20 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur-sm pt-8 pb-4 -mt-8 mb-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 border-b border-gray-200 dark:border-gray-800">
-                    <button onclick="goBackToDashboard()" class="inline-flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-4 group">
-                        <i data-lucide="arrow-left" class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform"></i>
-                        Back to all trips
+                <div class="sticky top-16 z-20 bg-gray-50/90 dark:bg-gray-900/90 backdrop-blur-md pt-8 pb-4 -mt-8 mb-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 border-b border-gray-200 dark:border-gray-800 transition-colors">
+                    <button onclick="goBackToDashboard()" class="inline-flex items-center text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors mb-4 group bg-white dark:bg-gray-800 py-1.5 px-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                        <i data-lucide="arrow-left" class="w-4 h-4 mr-1.5 transform group-hover:-translate-x-1 transition-transform"></i>
+                        Back to Trips
                     </button>
                     <div class="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
                         <div>
-                            <h1 id="overview-destination" class="text-3xl font-bold text-gray-900 dark:text-white">Destination</h1>
-                            <p id="overview-dates" class="text-gray-500 dark:text-gray-400 mt-1 flex items-center">
-                                <i data-lucide="calendar" class="w-4 h-4 mr-2"></i> <span id="overview-dates-text">Dates</span>
+                            <h1 id="overview-destination" class="text-4xl font-black text-gray-900 dark:text-white tracking-tight">Destination</h1>
+                            <p id="overview-dates" class="text-gray-500 dark:text-gray-400 mt-2 flex items-center font-medium">
+                                <i data-lucide="calendar" class="w-4 h-4 mr-2 text-brand-500"></i> <span id="overview-dates-text">Dates</span>
                             </p>
-                            <div id="overview-collaborators" class="mt-3"></div>
+                            <div id="overview-collaborators" class="mt-4"></div>
                         </div>
-                        <div id="overview-status-badge"></div>
+                        <div id="overview-status-badge" class="flex flex-wrap gap-3"></div>
                     </div>
                 </div>
 
                 <!-- The 3 Summary Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div onclick="viewCategory('flights')" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 cursor-pointer hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-blue-300 dark:hover:border-blue-500 transition-all text-center group">
-                        <div class="w-16 h-16 mx-auto bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                            <i data-lucide="plane" class="w-8 h-8"></i>
+                    <div onclick="viewCategory('flights')" class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-blue-200 dark:hover:border-blue-800 transition-all duration-300 text-center group relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent dark:from-blue-900/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="w-20 h-20 mx-auto bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 relative z-10 shadow-sm">
+                            <i data-lucide="plane" class="w-10 h-10"></i>
                         </div>
-                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Flights</h2>
-                        <p id="summary-flights" class="text-gray-500 dark:text-gray-400 mt-2 font-medium">0 booked</p>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white relative z-10">Flights</h2>
+                        <p id="summary-flights" class="text-blue-600 dark:text-blue-400 mt-2 font-semibold relative z-10 bg-blue-50 dark:bg-blue-900/30 inline-block px-3 py-1 rounded-full text-sm">0 booked</p>
                     </div>
 
-                    <div onclick="viewCategory('itinerary')" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 cursor-pointer hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-amber-300 dark:hover:border-amber-500 transition-all text-center group">
-                        <div class="w-16 h-16 mx-auto bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                            <i data-lucide="map-pin" class="w-8 h-8"></i>
+                    <div onclick="viewCategory('itinerary')" class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-amber-200 dark:hover:border-amber-800 transition-all duration-300 text-center group relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-900/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="w-20 h-20 mx-auto bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 relative z-10 shadow-sm">
+                            <i data-lucide="map-pin" class="w-10 h-10"></i>
                         </div>
-                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Itinerary</h2>
-                        <p id="summary-itinerary" class="text-gray-500 dark:text-gray-400 mt-2 font-medium">0 activities</p>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white relative z-10">Itinerary</h2>
+                        <p id="summary-itinerary" class="text-amber-600 dark:text-amber-400 mt-2 font-semibold relative z-10 bg-amber-50 dark:bg-amber-900/30 inline-block px-3 py-1 rounded-full text-sm">0 activities</p>
                     </div>
 
-                    <div onclick="viewCategory('expenses')" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 cursor-pointer hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-emerald-300 dark:hover:border-emerald-500 transition-all text-center group">
-                        <div class="w-16 h-16 mx-auto bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                            <i data-lucide="dollar-sign" class="w-8 h-8"></i>
+                    <div onclick="viewCategory('expenses')" class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-emerald-200 dark:hover:border-emerald-800 transition-all duration-300 text-center group relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent dark:from-emerald-900/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="w-20 h-20 mx-auto bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 relative z-10 shadow-sm">
+                            <i data-lucide="wallet" class="w-10 h-10"></i>
                         </div>
-                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Expenses</h2>
-                        <p id="summary-expenses" class="text-gray-500 dark:text-gray-400 mt-2 font-medium">SGD$0.00 spent</p>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white relative z-10">Expenses</h2>
+                        <p id="summary-expenses" class="text-emerald-600 dark:text-emerald-400 mt-2 font-semibold relative z-10 bg-emerald-50 dark:bg-emerald-900/30 inline-block px-3 py-1 rounded-full text-sm">SGD $0.00 spent</p>
                     </div>
                 </div>
             </div>
@@ -223,58 +261,58 @@
             <!-- VIEW 3: CATEGORY DETAILS                   -->
             <!-- ========================================== -->
             <div id="category-details-view" class="hidden flex-col h-full min-h-[calc(100vh-8rem)]">
-                <div class="sticky top-16 z-20 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur-sm pt-8 pb-4 -mt-8 mb-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 border-b border-gray-200 dark:border-gray-800">
-                    <button onclick="goBackToTripOverview()" class="inline-flex items-center w-fit text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-4 group">
-                        <i data-lucide="arrow-left" class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform"></i>
+                <div class="sticky top-16 z-20 bg-gray-50/90 dark:bg-gray-900/90 backdrop-blur-md pt-8 pb-4 -mt-8 mb-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 border-b border-gray-200 dark:border-gray-800 transition-colors">
+                    <button onclick="goBackToTripOverview()" class="inline-flex items-center w-fit text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors mb-4 group bg-white dark:bg-gray-800 py-1.5 px-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                        <i data-lucide="arrow-left" class="w-4 h-4 mr-1.5 transform group-hover:-translate-x-1 transition-transform"></i>
                         <span id="category-back-text">Back to Trip Overview</span>
                     </button>
                     
-                    <div class="flex justify-between items-center bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 gap-4">
                         <div class="flex items-center gap-4">
-                            <div id="category-header-icon" class="p-3 rounded-xl"></div>
+                            <div id="category-header-icon" class="p-4 rounded-2xl"></div>
                             <div>
-                                <h2 id="category-header-title" class="text-2xl font-bold text-gray-900 dark:text-white">Category</h2>
-                                <p id="category-header-subtitle" class="text-gray-500 dark:text-gray-400 text-sm">Manage items</p>
+                                <h2 id="category-header-title" class="text-3xl font-black text-gray-900 dark:text-white">Category</h2>
+                                <p id="category-header-subtitle" class="text-gray-500 dark:text-gray-400 font-medium mt-1">Manage items</p>
                             </div>
                         </div>
-                        <button id="add-item-btn" class="inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                        <button id="add-item-btn" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transform active:scale-95">
                             <i data-lucide="plus" class="w-5 h-5"></i>
-                            <span id="add-item-text" class="hidden sm:inline">Add Item</span>
+                            <span id="add-item-text">Add Item</span>
                         </button>
                     </div>
                 </div>
 
-                <div id="category-content-container" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6"></div>
+                <div id="category-content-container" class="bg-transparent rounded-xl"></div>
             </div>
 
             <!-- ========================================== -->
             <!-- VIEW 4: DAY DETAILS (Itinerary Level 2)    -->
             <!-- ========================================== -->
             <div id="day-details-view" class="hidden flex-col h-full min-h-[calc(100vh-8rem)]">
-                <div class="sticky top-16 z-20 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur-sm pt-8 pb-4 -mt-8 mb-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 border-b border-gray-200 dark:border-gray-800">
-                    <button onclick="goBackToItinerary()" class="inline-flex items-center w-fit text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors mb-4 group">
-                        <i data-lucide="arrow-left" class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform"></i>
-                        <span>Back to Itinerary Overview</span>
+                <div class="sticky top-16 z-20 bg-gray-50/90 dark:bg-gray-900/90 backdrop-blur-md pt-8 pb-4 -mt-8 mb-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 border-b border-gray-200 dark:border-gray-800 transition-colors">
+                    <button onclick="goBackToItinerary()" class="inline-flex items-center w-fit text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors mb-4 group bg-white dark:bg-gray-800 py-1.5 px-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                        <i data-lucide="arrow-left" class="w-4 h-4 mr-1.5 transform group-hover:-translate-x-1 transition-transform"></i>
+                        <span>Back to Itinerary</span>
                     </button>
                     
-                    <div class="flex justify-between items-center bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 gap-4">
                         <div class="flex items-center gap-4">
-                            <div class="p-3 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
-                                <i data-lucide="calendar-clock" class="w-6 h-6"></i>
+                            <div class="p-4 rounded-2xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                                <i data-lucide="calendar-clock" class="w-8 h-8"></i>
                             </div>
                             <div>
-                                <h2 id="day-header-title" class="text-2xl font-bold text-gray-900 dark:text-white">Day X</h2>
-                                <p id="day-header-subtitle" class="text-gray-500 dark:text-gray-400 text-sm">Date</p>
+                                <h2 id="day-header-title" class="text-3xl font-black text-gray-900 dark:text-white">Day X</h2>
+                                <p id="day-header-subtitle" class="text-gray-500 dark:text-gray-400 font-medium mt-1">Date</p>
                             </div>
                         </div>
-                        <button onclick="openItineraryModal()" class="inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 bg-amber-600 hover:bg-amber-700 focus:ring-amber-500 dark:focus:ring-offset-gray-900">
+                        <button onclick="openItineraryModal()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 bg-amber-500 hover:bg-amber-600 focus:ring-amber-500 dark:focus:ring-offset-gray-900 transform active:scale-95">
                             <i data-lucide="plus" class="w-5 h-5"></i>
-                            <span class="hidden sm:inline">Add Activity</span>
+                            <span>Add Activity</span>
                         </button>
                     </div>
                 </div>
 
-                <div id="day-content-container" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6"></div>
+                <div id="day-content-container" class="bg-transparent rounded-xl"></div>
             </div>
 
         </main>
@@ -285,241 +323,250 @@
     <!-- ========================================== -->
 
     <!-- Trip Modal -->
-    <div id="trip-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 dark:bg-gray-900/80 backdrop-blur-sm hide-modal modal-overlay px-4">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden modal-content flex flex-col max-h-[90vh]">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
-                <h3 id="trip-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">Add New Trip</h3>
-                <button onclick="closeModal('trip-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div id="trip-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden modal-content flex flex-col max-h-[90vh] border border-gray-100 dark:border-gray-700">
+            <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                <h3 id="trip-modal-title" class="text-xl font-bold text-gray-900 dark:text-white">Add New Trip</h3>
+                <button onclick="closeModal('trip-modal')" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-full p-2 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="p-6 overflow-y-auto">
-                <form id="trip-form" class="space-y-4">
+                <form id="trip-form" class="space-y-5">
                     <input type="hidden" id="trip-id">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Destination</label>
-                        <input type="text" id="trip-destination" required placeholder="e.g., Kyoto, Japan" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Destination</label>
+                        <input type="text" id="trip-destination" required placeholder="e.g., Bangkok, Bali, or Tokyo" class="w-full px-4 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 dark:text-white dark:placeholder-gray-500 outline-none transition-all">
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-5">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
-                            <input type="date" id="trip-start-date" required class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark]" onchange="validateTripDates()">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Start Date</label>
+                            <input type="date" id="trip-start-date" required class="w-full px-4 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 dark:text-white outline-none transition-all [color-scheme:light_dark]" onchange="validateTripDates()">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
-                            <input type="date" id="trip-end-date" required class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark]" onchange="validateTripDates()">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">End Date</label>
+                            <input type="date" id="trip-end-date" required class="w-full px-4 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 dark:text-white outline-none transition-all [color-scheme:light_dark]" onchange="validateTripDates()">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cover Image URL (Optional)</label>
-                        <input type="url" id="trip-image-url" placeholder="https://example.com/image.jpg" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Cover Image URL (Optional)</label>
+                        <input type="url" id="trip-image-url" placeholder="https://example.com/image.jpg" class="w-full px-4 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 dark:text-white dark:placeholder-gray-500 outline-none transition-all">
+                        <p class="text-xs text-gray-500 mt-1.5">Leave blank for a random destination photo.</p>
                     </div>
                 </form>
             </div>
-            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3 mt-auto">
-                <button type="button" onclick="closeModal('trip-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</button>
-                <button type="button" onclick="saveTrip()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600">Save Trip</button>
+            <div class="px-6 py-5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end gap-3 mt-auto">
+                <button type="button" onclick="closeModal('trip-modal')" class="px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">Cancel</button>
+                <button type="button" onclick="saveTrip()" class="px-5 py-2.5 text-sm font-semibold text-white bg-brand-600 dark:bg-brand-500 rounded-xl hover:bg-brand-700 dark:hover:bg-brand-600 transition-colors shadow-sm">Save Trip</button>
             </div>
         </div>
     </div>
 
     <!-- Flight Modal -->
-    <div id="flight-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 dark:bg-gray-900/80 backdrop-blur-sm hide-modal modal-overlay px-4">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden modal-content">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
-                <h3 id="flight-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">Add Flight</h3>
-                <button onclick="closeModal('flight-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div id="flight-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden modal-content border border-gray-100 dark:border-gray-700 flex flex-col max-h-[90vh]">
+            <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                <h3 id="flight-modal-title" class="text-xl font-bold text-gray-900 dark:text-white">Add Flight</h3>
+                <button onclick="closeModal('flight-modal')" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-full p-2 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <div class="p-6 overflow-y-auto max-h-[70vh]">
-                <form id="flight-form" class="space-y-4">
+            <div class="p-6 overflow-y-auto">
+                <form id="flight-form" class="space-y-5">
                     <input type="hidden" id="flight-id">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Airline & Flight #</label>
-                        <input type="text" id="flight-airline" required placeholder="e.g., Delta DL123" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Airline & Flight #</label>
+                        <input type="text" id="flight-airline" required placeholder="e.g., Scoot TR123" class="w-full px-4 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-500 outline-none transition-all">
                     </div>
-                    <div class="grid grid-cols-3 gap-4">
-                        <div class="col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Departure</label>
-                            <div class="flex gap-2">
-                                <input type="date" id="flight-departure-date" required class="w-3/5 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark]" onchange="validateFlightDates()">
-                                <input type="time" id="flight-departure-time" required class="w-2/5 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark]">
+                    
+                    <div class="bg-gray-50 dark:bg-gray-900/30 p-4 rounded-xl border border-gray-200 dark:border-gray-700 space-y-4">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Departure</h4>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <div class="flex-grow">
+                                <div class="flex gap-2">
+                                    <input type="date" id="flight-departure-date" required class="w-3/5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark] outline-none" onchange="validateFlightDates()">
+                                    <input type="time" id="flight-departure-time" required class="w-2/5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark] outline-none">
+                                </div>
+                            </div>
+                            <div class="w-full sm:w-24">
+                                <input type="text" id="flight-dep-terminal" placeholder="Term. (e.g. 1)" class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white outline-none">
                             </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Terminal</label>
-                            <input type="text" id="flight-dep-terminal" placeholder="e.g., 1" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400">
-                        </div>
-                        <div class="col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Arrival</label>
-                            <div class="flex gap-2">
-                                <input type="date" id="flight-arrival-date" required class="w-3/5 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark]" onchange="validateFlightDates()">
-                                <input type="time" id="flight-arrival-time" required class="w-2/5 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark]">
+
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-700">Arrival</h4>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <div class="flex-grow">
+                                <div class="flex gap-2">
+                                    <input type="date" id="flight-arrival-date" required class="w-3/5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark] outline-none" onchange="validateFlightDates()">
+                                    <input type="time" id="flight-arrival-time" required class="w-2/5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark] outline-none">
+                                </div>
                             </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Terminal</label>
-                            <input type="text" id="flight-arr-terminal" placeholder="e.g., 3" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400">
+                            <div class="w-full sm:w-24">
+                                <input type="text" id="flight-arr-terminal" placeholder="Term." class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white outline-none">
+                            </div>
                         </div>
                     </div>
 
                     <!-- Connecting Flight Toggle -->
-                    <div class="flex items-center mt-2 mb-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800/50">
-                        <input type="checkbox" id="flight-has-connection" class="w-4 h-4 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-600 cursor-pointer" onchange="toggleConnectionFields()">
-                        <label for="flight-has-connection" class="ml-2 text-sm font-medium text-blue-800 dark:text-blue-300 cursor-pointer">Has connecting flight?</label>
+                    <div class="flex items-center mt-2 bg-blue-50 dark:bg-blue-900/20 p-3.5 rounded-xl border border-blue-100 dark:border-blue-800/50 cursor-pointer" onclick="document.getElementById('flight-has-connection').click()">
+                        <input type="checkbox" id="flight-has-connection" class="w-4 h-4 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-600 cursor-pointer" onchange="toggleConnectionFields(); event.stopPropagation();">
+                        <label for="flight-has-connection" class="ml-3 text-sm font-semibold text-blue-800 dark:text-blue-300 cursor-pointer pointer-events-none">Include a connecting flight</label>
                     </div>
 
                     <!-- Connecting Flight Fields -->
-                    <div id="connection-fields" class="hidden space-y-4 border-l-2 border-blue-300 dark:border-blue-700 pl-4 ml-2 mt-2">
+                    <div id="connection-fields" class="hidden space-y-4 p-4 bg-gray-50 dark:bg-gray-900/30 rounded-xl border border-dashed border-blue-300 dark:border-blue-700/50">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Connecting Airline & Flight #</label>
-                            <input type="text" id="conn-airline" placeholder="e.g., Delta DL456" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Connecting Airline & Flight #</label>
+                            <input type="text" id="conn-airline" placeholder="e.g., JAL JL789" class="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-500 outline-none">
                         </div>
-                        <div class="grid grid-cols-3 gap-4">
-                            <div class="col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Departure</label>
+                        
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Departure</h4>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <div class="flex-grow">
                                 <div class="flex gap-2">
-                                    <input type="date" id="conn-departure-date" class="w-3/5 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark]" onchange="validateFlightDates()">
-                                    <input type="time" id="conn-departure-time" class="w-2/5 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark]">
+                                    <input type="date" id="conn-departure-date" class="w-3/5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark] outline-none" onchange="validateFlightDates()">
+                                    <input type="time" id="conn-departure-time" class="w-2/5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark] outline-none">
                                 </div>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Terminal</label>
-                                <input type="text" id="conn-dep-terminal" placeholder="e.g., 4" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400">
+                            <div class="w-full sm:w-24">
+                                <input type="text" id="conn-dep-terminal" placeholder="Term." class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white outline-none">
                             </div>
-                            <div class="col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Arrival</label>
+                        </div>
+
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-700">Arrival</h4>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <div class="flex-grow">
                                 <div class="flex gap-2">
-                                    <input type="date" id="conn-arrival-date" class="w-3/5 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark]" onchange="validateFlightDates()">
-                                    <input type="time" id="conn-arrival-time" class="w-2/5 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark]">
+                                    <input type="date" id="conn-arrival-date" class="w-3/5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark] outline-none" onchange="validateFlightDates()">
+                                    <input type="time" id="conn-arrival-time" class="w-2/5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white [color-scheme:light_dark] outline-none">
                                 </div>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Terminal</label>
-                                <input type="text" id="conn-arr-terminal" placeholder="e.g., B" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400">
+                            <div class="w-full sm:w-24">
+                                <input type="text" id="conn-arr-terminal" placeholder="Term." class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white outline-none">
                             </div>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes (Optional)</label>
-                        <textarea id="flight-notes" rows="2" placeholder="Booking Ref, Terminal, Gate, etc." class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400"></textarea>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Notes (Optional)</label>
+                        <textarea id="flight-notes" rows="2" placeholder="Booking Ref, Changi Terminal details, etc." class="w-full px-4 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 dark:text-white dark:placeholder-gray-500 outline-none transition-all"></textarea>
                     </div>
                 </form>
             </div>
-            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3">
-                <button type="button" onclick="closeModal('flight-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</button>
-                <button type="button" onclick="saveFlight()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600">Save</button>
+            <div class="px-6 py-5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end gap-3 shrink-0">
+                <button type="button" onclick="closeModal('flight-modal')" class="px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">Cancel</button>
+                <button type="button" onclick="saveFlight()" class="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 dark:bg-blue-500 rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors shadow-sm">Save Flight</button>
             </div>
         </div>
     </div>
 
     <!-- Itinerary Modal -->
-    <div id="itinerary-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 dark:bg-gray-900/80 backdrop-blur-sm hide-modal modal-overlay px-4">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden modal-content">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
-                <h3 id="itinerary-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">Add Activity</h3>
-                <button onclick="closeModal('itinerary-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div id="itinerary-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden modal-content border border-gray-100 dark:border-gray-700">
+            <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                <h3 id="itinerary-modal-title" class="text-xl font-bold text-gray-900 dark:text-white">Add Activity</h3>
+                <button onclick="closeModal('itinerary-modal')" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-full p-2 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="p-6">
-                <form id="itinerary-form" class="space-y-4">
+                <form id="itinerary-form" class="space-y-5">
                     <input type="hidden" id="itinerary-id">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activity / Location</label>
-                        <input type="text" id="itinerary-activity" required placeholder="e.g., Visit Louvre Museum" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:text-white dark:placeholder-gray-400">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Activity / Location</label>
+                        <input type="text" id="itinerary-activity" required placeholder="e.g., Chatuchak Market" class="w-full px-4 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 dark:text-white dark:placeholder-gray-500 outline-none transition-all">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date & Time</label>
-                        <div class="flex gap-2">
-                            <input type="date" id="itinerary-date" required class="w-3/5 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:text-white [color-scheme:light_dark]">
-                            <input type="time" id="itinerary-time" required class="w-2/5 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:text-white [color-scheme:light_dark]">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Date & Time</label>
+                        <div class="flex gap-3">
+                            <input type="date" id="itinerary-date" required class="w-3/5 px-4 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 dark:text-white outline-none transition-all [color-scheme:light_dark]">
+                            <input type="time" id="itinerary-time" required class="w-2/5 px-4 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 dark:text-white outline-none transition-all [color-scheme:light_dark]">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes (Optional)</label>
-                        <textarea id="itinerary-notes" rows="2" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 dark:text-white dark:placeholder-gray-400"></textarea>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Notes (Optional)</label>
+                        <textarea id="itinerary-notes" rows="3" placeholder="Bring extra cash, open from 9am..." class="w-full px-4 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 dark:text-white dark:placeholder-gray-500 outline-none transition-all"></textarea>
                     </div>
                 </form>
             </div>
-            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3">
-                <button type="button" onclick="closeModal('itinerary-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</button>
-                <button type="button" onclick="saveItinerary()" class="px-4 py-2 text-sm font-medium text-white bg-amber-600 dark:bg-amber-500 rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600">Save</button>
+            <div class="px-6 py-5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end gap-3">
+                <button type="button" onclick="closeModal('itinerary-modal')" class="px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">Cancel</button>
+                <button type="button" onclick="saveItinerary()" class="px-5 py-2.5 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-xl transition-colors shadow-sm">Save Activity</button>
             </div>
         </div>
     </div>
 
     <!-- Expense Modal -->
-    <div id="expense-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 dark:bg-gray-900/80 backdrop-blur-sm hide-modal modal-overlay px-4">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm overflow-hidden modal-content">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
-                <h3 id="expense-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">Add Expense</h3>
-                <button onclick="closeModal('expense-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div id="expense-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden modal-content border border-gray-100 dark:border-gray-700">
+            <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                <h3 id="expense-modal-title" class="text-xl font-bold text-gray-900 dark:text-white">Add Expense</h3>
+                <button onclick="closeModal('expense-modal')" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-full p-2 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="p-6">
-                <form id="expense-form" class="space-y-4">
+                <form id="expense-form" class="space-y-5">
                     <input type="hidden" id="expense-id">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-                        <input type="text" id="expense-desc" required placeholder="e.g., Dinner at Cafe" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 dark:text-white dark:placeholder-gray-400">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
+                        <input type="text" id="expense-desc" required placeholder="e.g., Tom Yum Seafood Dinner" class="w-full px-4 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 dark:text-white dark:placeholder-gray-500 outline-none transition-all">
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-5">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
-                            <input type="number" id="expense-amount" step="0.01" min="0" required placeholder="0.00" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 dark:text-white dark:placeholder-gray-400" oninput="calculateSGD()">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Amount (Local)</label>
+                            <input type="number" id="expense-amount" step="0.01" min="0" required placeholder="0.00" class="w-full px-4 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 dark:text-white dark:placeholder-gray-500 outline-none transition-all" oninput="calculateSGD()">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Local per SGD$1</label>
-                            <input type="number" id="expense-rate" step="0.000001" min="0.000001" required placeholder="1.00" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 transition-colors dark:text-white dark:placeholder-gray-400" oninput="calculateSGD()">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Local per SGD $1</label>
+                            <input type="number" id="expense-rate" step="0.000001" min="0.000001" required placeholder="1.00" class="w-full px-4 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 dark:text-white dark:placeholder-gray-500 outline-none transition-all" oninput="calculateSGD()">
                         </div>
-                        <div class="col-span-2 flex items-center mb-1">
-                            <input type="checkbox" id="expense-use-nominal" class="w-4 h-4 text-emerald-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-emerald-500 dark:focus:ring-emerald-600 dark:ring-offset-gray-800 cursor-pointer" onchange="toggleNominalRate()">
-                            <label for="expense-use-nominal" class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">Use nominal rate</label>
+                        <div class="col-span-2 flex items-center bg-gray-50 dark:bg-gray-900/30 p-3 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer" onclick="document.getElementById('expense-use-nominal').click()">
+                            <input type="checkbox" id="expense-use-nominal" class="w-4 h-4 text-emerald-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-emerald-500 dark:focus:ring-emerald-600 dark:ring-offset-gray-800 cursor-pointer" onchange="toggleNominalRate(); event.stopPropagation();">
+                            <label for="expense-use-nominal" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer pointer-events-none">Use trip default exchange rate</label>
                         </div>
                     </div>
-                    <div class="text-sm text-gray-600 dark:text-gray-300 bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-100 dark:border-emerald-800/50 flex justify-between items-center">
-                        <span>Equivalent in SGD:</span>
-                        <span id="expense-sgd-calc" class="font-bold text-emerald-700 dark:text-emerald-400 text-lg">SGD$ 0.00</span>
+                    <div class="text-sm text-gray-600 dark:text-gray-300 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800/50 flex justify-between items-center shadow-inner">
+                        <span class="font-medium">Equivalent in SGD:</span>
+                        <span id="expense-sgd-calc" class="font-black text-emerald-700 dark:text-emerald-400 text-xl tracking-tight">SGD $0.00</span>
                     </div>
                 </form>
             </div>
-            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3">
-                <button type="button" onclick="closeModal('expense-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</button>
-                <button type="button" onclick="saveExpense()" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 dark:bg-emerald-500 rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-600">Save</button>
+            <div class="px-6 py-5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end gap-3">
+                <button type="button" onclick="closeModal('expense-modal')" class="px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">Cancel</button>
+                <button type="button" onclick="saveExpense()" class="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded-xl transition-colors shadow-sm">Save Expense</button>
             </div>
         </div>
     </div>
 
     <!-- Generic Delete Modal -->
-    <div id="delete-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 dark:bg-gray-900/80 backdrop-blur-sm hide-modal modal-overlay px-4">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm overflow-hidden modal-content">
-            <div class="p-6 text-center">
-                <div class="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 mx-auto flex items-center justify-center mb-4"><i data-lucide="alert-triangle" class="w-6 h-6 text-red-600 dark:text-red-400"></i></div>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Item?</h3>
+    <div id="delete-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden modal-content border border-gray-100 dark:border-gray-700">
+            <div class="p-6 text-center pt-8">
+                <div class="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 mx-auto flex items-center justify-center mb-5 ring-4 ring-red-50 dark:ring-red-900/10">
+                    <i data-lucide="trash-2" class="w-8 h-8 text-red-600 dark:text-red-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete Item?</h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400">Are you sure you want to delete this? This action cannot be undone.</p>
             </div>
-            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 flex justify-center gap-3">
-                <button onclick="closeModal('delete-modal')" class="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</button>
-                <button onclick="confirmDelete()" class="w-full px-4 py-2 text-sm font-medium text-white bg-red-600 dark:bg-red-500 border border-transparent rounded-lg hover:bg-red-700 dark:hover:bg-red-600">Delete</button>
+            <div class="px-6 py-5 bg-gray-50 dark:bg-gray-800 flex flex-col sm:flex-row justify-center gap-3 border-t border-gray-100 dark:border-gray-700">
+                <button onclick="closeModal('delete-modal')" class="w-full px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">Cancel</button>
+                <button onclick="confirmDelete()" class="w-full px-5 py-2.5 text-sm font-semibold text-white bg-red-600 dark:bg-red-500 border border-transparent rounded-xl hover:bg-red-700 dark:hover:bg-red-600 transition-colors shadow-sm">Yes, Delete</button>
             </div>
         </div>
     </div>
 
     <!-- Share Modal -->
-    <div id="share-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 dark:bg-gray-900/80 backdrop-blur-sm hide-modal modal-overlay px-4">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm overflow-hidden modal-content">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Share Trip</h3>
-                <button onclick="closeModal('share-modal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div id="share-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm hide-modal modal-overlay px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden modal-content border border-gray-100 dark:border-gray-700">
+            <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Share Trip</h3>
+                <button onclick="closeModal('share-modal')" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-full p-2 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="p-6">
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Enter the username of the person you want to collaborate with on this trip.</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-5">Enter the username of the person you want to collaborate with on this trip.</p>
                 <form id="share-form" class="space-y-4" onsubmit="submitShare(event)">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
-                        <input type="text" id="share-username" required placeholder="e.g., sam123" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:text-white dark:placeholder-gray-400">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Username</label>
+                        <input type="text" id="share-username" required placeholder="e.g., sam123" class="w-full px-4 py-2.5 bg-white dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:text-white dark:placeholder-gray-500 outline-none transition-all">
                     </div>
                 </form>
             </div>
-            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3">
-                <button type="button" onclick="closeModal('share-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</button>
-                <button type="button" onclick="submitShare()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-500 rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600">Share</button>
+            <div class="px-6 py-5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end gap-3">
+                <button type="button" onclick="closeModal('share-modal')" class="px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">Cancel</button>
+                <button type="button" onclick="submitShare()" class="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 dark:bg-indigo-500 rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-sm">Share Trip</button>
             </div>
         </div>
     </div>
@@ -559,17 +606,21 @@
         let currentDayDate = null;  
         let currentDayNumber = null;
         let deleteTarget = { type: null, id: null }; 
-        let currentUser = null; // Track logged-in user
+        let currentUser = null; 
 
         lucide.createIcons();
 
         // --- Toast & Loader UI ---
         const showLoader = (text = 'Loading...') => {
             document.getElementById('loader-text').textContent = text;
-            document.getElementById('global-loader').classList.remove('hidden');
+            const loader = document.getElementById('global-loader');
+            loader.classList.remove('hidden');
+            setTimeout(() => loader.style.opacity = '1', 10);
         };
         const hideLoader = () => {
-            document.getElementById('global-loader').classList.add('hidden');
+            const loader = document.getElementById('global-loader');
+            loader.style.opacity = '0';
+            setTimeout(() => loader.classList.add('hidden'), 300);
         };
 
         const showToast = (message, isError = false) => {
@@ -577,11 +628,11 @@
             container.classList.remove('hidden');
             
             const toast = document.createElement('div');
-            toast.className = `px-4 py-3 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2 toast-animate ${
-                isError ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-green-100 text-green-800 border border-green-200'
+            toast.className = `px-5 py-3.5 rounded-xl shadow-xl text-sm font-semibold flex items-center gap-3 toast-animate border backdrop-blur-md ${
+                isError ? 'bg-red-50/95 text-red-800 border-red-200 dark:bg-red-900/90 dark:text-red-200 dark:border-red-800' : 'bg-green-50/95 text-green-800 border-green-200 dark:bg-green-900/90 dark:text-green-200 dark:border-green-800'
             }`;
             
-            const icon = isError ? '<i data-lucide="alert-circle" class="w-4 h-4"></i>' : '<i data-lucide="check-circle" class="w-4 h-4"></i>';
+            const icon = isError ? '<i data-lucide="alert-circle" class="w-5 h-5 shrink-0"></i>' : '<i data-lucide="check-circle" class="w-5 h-5 shrink-0"></i>';
             toast.innerHTML = `${icon} <span>${message}</span>`;
             
             container.appendChild(toast);
@@ -589,6 +640,8 @@
             
             setTimeout(() => {
                 toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                toast.style.transition = 'all 0.3s ease';
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         };
@@ -632,7 +685,6 @@
             }
         };
 
-        // Initialize toggle to use new state manager
         document.getElementById('auth-switch-btn').onclick = (e) => { e.preventDefault(); setAuthMode('register'); };
 
         const loginUserUI = (username) => {
@@ -640,14 +692,14 @@
             try { localStorage.setItem('journeyLogUser', username); } catch(e) {}
             
             document.getElementById('nav-username').textContent = username;
-            document.getElementById('nav-avatar').src = `https://ui-avatars.com/api/?name=${username}&background=0D8ABC&color=fff`;
+            document.getElementById('nav-avatar').src = `https://ui-avatars.com/api/?name=${username}&background=0D8ABC&color=fff&bold=true`;
             
             document.getElementById('auth-view').classList.add('hidden');
             document.getElementById('app-wrapper').classList.remove('hidden');
             document.getElementById('app-wrapper').classList.add('flex');
             
-            document.documentElement.classList.add('is-authenticated'); // Ensure anti-flash CSS stays active
-            goBackToDashboard(); // Make sure user is explicitly routed to dashboard
+            document.documentElement.classList.add('is-authenticated');
+            goBackToDashboard(); 
             fetchTripsFromDatabase(); 
         };
 
@@ -683,14 +735,7 @@
 
                 if (result.success) {
                     showToast(result.message);
-                    if (mode === 'reset') {
-                        // Immediately login after reset
-                        loginUserUI(username);
-                    } else if (mode === 'register') {
-                        loginUserUI(username);
-                    } else {
-                        loginUserUI(username);
-                    }
+                    loginUserUI(username); // Immediate login for all flows on success
                 } else {
                     showToast(result.message, true);
                 }
@@ -705,7 +750,7 @@
             currentUser = null;
             trips = [];
             try { localStorage.removeItem('journeyLogUser'); } catch(e) {}
-            document.documentElement.classList.remove('is-authenticated'); // Remove CSS anti-flash
+            document.documentElement.classList.remove('is-authenticated');
             
             document.getElementById('app-wrapper').classList.add('hidden');
             document.getElementById('app-wrapper').classList.remove('flex');
@@ -713,9 +758,7 @@
             document.getElementById('auth-password').value = '';
             document.getElementById('auth-username').value = ''; 
             
-            // Force form back to Login mode via state manager
             setAuthMode('login');
-            
             showToast("Successfully logged out.");
         };
 
@@ -785,16 +828,13 @@
             renderTripOverview();
         };
 
-
         // --- Utils ---
         const linkify = (text) => {
             if (!text) return '';
-            // Basic XSS protection before rendering HTML
             let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            // Find URLs and wrap them in anchor tags
             const urlRegex = /(https?:\/\/[^\s]+)/g;
             return safeText.replace(urlRegex, function(url) {
-                return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline break-all" onclick="event.stopPropagation()">${url}</a>`;
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-brand-600 dark:text-brand-400 hover:underline break-all font-medium" onclick="event.stopPropagation()">${url}</a>`;
             });
         };
 
@@ -818,8 +858,8 @@
         
         const getStatusBadge = (status) => {
             const badges = {
-                upcoming: '<span class="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800">Upcoming</span>',
-                completed: '<span class="px-3 py-1 text-sm font-medium rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800">Completed</span>'
+                upcoming: '<span class="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-brand-100/90 text-brand-800 border border-brand-200 backdrop-blur-sm dark:bg-brand-900/80 dark:text-brand-200 dark:border-brand-700 shadow-sm">Upcoming</span>',
+                completed: '<span class="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-100/90 text-emerald-800 border border-emerald-200 backdrop-blur-sm dark:bg-emerald-900/80 dark:text-emerald-200 dark:border-emerald-700 shadow-sm">Completed</span>'
             };
             return badges[status] || badges['upcoming'];
         };
@@ -831,6 +871,7 @@
         };
 
         const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2, 5);
+        
         const getDatesBetween = (startDate, endDate) => {
             const dates = [];
             let curr = new Date(startDate);
@@ -862,26 +903,13 @@
                 if (trip) {
                     const tStart = trip.startDate.split('T')[0];
                     const tEnd = trip.endDate.split('T')[0];
-
-                    // Set absolute boundaries for all flight date pickers
-                    depDateInput.min = tStart;
-                    depDateInput.max = tEnd;
+                    depDateInput.min = tStart; depDateInput.max = tEnd;
+                    arrDateInput.min = tStart; arrDateInput.max = tEnd;
                     
-                    arrDateInput.min = tStart;
-                    arrDateInput.max = tEnd;
-                    
-                    if (connDepDateInput) {
-                        connDepDateInput.min = tStart;
-                        connDepDateInput.max = tEnd;
-                    }
-                    if (connArrDateInput) {
-                        connArrDateInput.min = tStart;
-                        connArrDateInput.max = tEnd;
-                    }
+                    if (connDepDateInput) { connDepDateInput.min = tStart; connDepDateInput.max = tEnd; }
+                    if (connArrDateInput) { connArrDateInput.min = tStart; connArrDateInput.max = tEnd; }
                 }
             }
-
-            // Dynamically tighten the 'min' constraints based on previous segment selections
             if (depDateInput.value) arrDateInput.min = depDateInput.value;
             if (arrDateInput.value && connDepDateInput) connDepDateInput.min = arrDateInput.value;
             if (connDepDateInput && connDepDateInput.value && connArrDateInput) connArrDateInput.min = connDepDateInput.value;
@@ -969,43 +997,48 @@
         // ==========================================
         const renderDashboardTrips = () => {
             const container = document.getElementById('trips-container');
-            container.innerHTML = '';
             if (trips.length === 0) {
-                container.classList.add('hidden'); document.getElementById('empty-state').classList.remove('hidden'); return;
+                container.classList.add('hidden'); 
+                document.getElementById('empty-state').classList.remove('hidden'); 
+                return;
             }
-            container.classList.remove('hidden'); document.getElementById('empty-state').classList.add('hidden');
+            container.classList.remove('hidden'); 
+            document.getElementById('empty-state').classList.add('hidden');
 
-            [...trips].sort((a, b) => {
+            // Optimisation: Build HTML string first to prevent reflows in loop
+            const htmlString = [...trips].sort((a, b) => {
                 const isACompleted = a.status === 'completed';
                 const isBCompleted = b.status === 'completed';
                 if (isACompleted && !isBCompleted) return 1;
                 if (!isACompleted && isBCompleted) return -1;
                 if (isACompleted) return new Date(b.startDate) - new Date(a.startDate);
                 return new Date(a.startDate) - new Date(b.startDate);
-            }).forEach(trip => {
+            }).map(trip => {
                 const locationName = trip.destination.split(',')[0].trim();
                 const searchKeyword = encodeURIComponent(locationName || 'travel');
                 const dynamicImage = `https://loremflickr.com/600/400/${searchKeyword},landmark/all`;
                 const imgUrl = trip.imageUrl || dynamicImage;
 
-                container.innerHTML += `
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 transition-all duration-300 group flex flex-col h-full cursor-pointer" onclick="viewTripOverview('${trip.id}')">
-                        <div class="relative h-48 overflow-hidden bg-gray-200 dark:bg-gray-700">
-                            <img src="${imgUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src='https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600'">
-                            <div class="absolute top-3 right-3 flex gap-2">${getStatusBadge(trip.status)}</div>
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-4">
+                return `
+                    <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-xl hover:-translate-y-1 dark:hover:shadow-black/50 transition-all duration-300 group flex flex-col h-full cursor-pointer" onclick="viewTripOverview('${trip.id}')">
+                        <div class="relative h-52 overflow-hidden bg-gray-200 dark:bg-gray-700">
+                            <img src="${imgUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onerror="this.src='https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600'">
+                            <div class="absolute top-4 right-4 flex gap-2">${getStatusBadge(trip.status)}</div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-4">
                                 <div class="flex gap-2">
-                                    <button onclick="event.stopPropagation(); openTripModal('${trip.id}')" class="p-2 bg-white/90 dark:bg-gray-800/90 rounded-lg hover:bg-white dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors shadow-sm" title="Edit Trip"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                                    <button onclick="event.stopPropagation(); triggerDelete('trip', '${trip.id}')" class="p-2 bg-white/90 dark:bg-gray-800/90 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 transition-colors shadow-sm" title="Delete Trip"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    <button onclick="event.stopPropagation(); openTripModal('${trip.id}')" class="p-2.5 bg-white/20 backdrop-blur-md rounded-xl hover:bg-white text-white hover:text-gray-900 transition-colors shadow-sm" title="Edit Trip"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                    <button onclick="event.stopPropagation(); triggerDelete('trip', '${trip.id}')" class="p-2.5 bg-red-500/80 backdrop-blur-md rounded-xl hover:bg-red-600 text-white transition-colors shadow-sm" title="Delete Trip"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                 </div>
                             </div>
                         </div>
-                        <div class="p-5 flex flex-col flex-grow">
-                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 line-clamp-1">${trip.destination}</h3>
-                            <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4"><i data-lucide="calendar" class="w-4 h-4 mr-2"></i><span>${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}</span></div>
+                        <div class="p-6 flex flex-col flex-grow">
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2 line-clamp-1">${trip.destination}</h3>
+                            <div class="flex items-center text-sm font-medium text-gray-500 dark:text-gray-400"><i data-lucide="calendar" class="w-4 h-4 mr-2"></i><span>${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}</span></div>
                         </div>
                     </div>`;
-            });
+            }).join('');
+            
+            container.innerHTML = htmlString;
             lucide.createIcons();
         };
 
@@ -1013,19 +1046,17 @@
             document.getElementById('trip-form').reset();
             const startInput = document.getElementById('trip-start-date');
             const endInput = document.getElementById('trip-end-date');
-            endInput.min = ''; // Reset min validation on open
+            endInput.min = ''; 
 
             if (id) {
                 document.getElementById('trip-modal-title').textContent = 'Edit Trip';
                 const trip = trips.find(t => t.id === id);
                 document.getElementById('trip-id').value = trip.id;
                 document.getElementById('trip-destination').value = trip.destination;
-                
                 startInput.value = trip.startDate.split('T')[0]; 
                 endInput.value = trip.endDate.split('T')[0]; 
                 document.getElementById('trip-image-url').value = trip.imageUrl;
-                
-                validateTripDates(); // Set min constraint based on loaded start date
+                validateTripDates(); 
             } else {
                 document.getElementById('trip-modal-title').textContent = 'Add New Trip';
                 document.getElementById('trip-id').value = '';
@@ -1087,10 +1118,9 @@
             document.getElementById('overview-destination').textContent = trip.destination;
             document.getElementById('overview-dates-text').textContent = `${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}`;
             
-            // Render Collaborators Avatars
             const collaborators = (trip.users || currentUser).split(',').map(u => u.trim()).filter(Boolean);
             const avatarsHtml = collaborators.map(user => 
-                `<img class="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100" src="https://ui-avatars.com/api/?name=${user}&background=random&color=fff" title="${user}" alt="${user}">`
+                `<img class="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100" src="https://ui-avatars.com/api/?name=${user}&background=random&color=fff&bold=true" title="${user}" alt="${user}">`
             ).join('');
 
             document.getElementById('overview-collaborators').innerHTML = `
@@ -1098,24 +1128,24 @@
                     <div class="flex -space-x-2 mr-3">
                         ${avatarsHtml}
                     </div>
-                    <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">${collaborators.length} collaborator${collaborators.length !== 1 ? 's' : ''}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 font-semibold">${collaborators.length} collaborator${collaborators.length !== 1 ? 's' : ''}</span>
                 </div>
             `;
 
             const statusSelectHtml = `
-                <select onchange="updateTripStatus(this.value)" class="pl-3 pr-8 py-1.5 text-sm font-medium rounded-full outline-none transition-colors cursor-pointer border ${
+                <select onchange="updateTripStatus(this.value)" class="pl-3 pr-8 py-2 text-sm font-bold rounded-xl outline-none transition-colors cursor-pointer border shadow-sm ${
                     trip.status === 'completed' 
-                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800 focus:ring-2 focus:ring-emerald-500' 
-                    : 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 focus:ring-2 focus:ring-blue-500'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800 focus:ring-2 focus:ring-emerald-500' 
+                    : 'bg-brand-50 text-brand-800 border-brand-200 dark:bg-brand-900/30 dark:text-brand-400 dark:border-brand-800 focus:ring-2 focus:ring-brand-500'
                 }">
-                    <option value="upcoming" class="dark:bg-gray-800" ${trip.status !== 'completed' ? 'selected' : ''}>Upcoming</option>
-                    <option value="completed" class="dark:bg-gray-800" ${trip.status === 'completed' ? 'selected' : ''}>Completed</option>
+                    <option value="upcoming" class="dark:bg-gray-800" ${trip.status !== 'completed' ? 'selected' : ''}>Upcoming Trip</option>
+                    <option value="completed" class="dark:bg-gray-800" ${trip.status === 'completed' ? 'selected' : ''}>Completed Trip</option>
                 </select>
             `;
             
             document.getElementById('overview-status-badge').innerHTML = `
-                <div class="flex items-center gap-3">
-                    <button onclick="openShareModal()" class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors shadow-sm">
+                <div class="flex flex-wrap items-center gap-3">
+                    <button onclick="openShareModal()" class="flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-xl bg-indigo-50 text-indigo-800 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors shadow-sm">
                         <i data-lucide="share-2" class="w-4 h-4"></i> Share
                     </button>
                     ${statusSelectHtml}
@@ -1124,7 +1154,6 @@
 
             const flightCount = trip.flights ? trip.flights.length : 0;
             const itineraryCount = trip.itinerary ? trip.itinerary.length : 0;
-            
             const nominalRate = getNominalRate(trip);
             const actualExpenses = (trip.expenses || []).filter(e => e.id !== '_NOMINAL_RATE_');
             
@@ -1136,7 +1165,7 @@
                 const validRate = rate > 0 ? rate : 1;
                 return sum + (parseFloat(e.amount) / validRate);
             }, 0);
-            document.getElementById('summary-expenses').textContent = `SGD$${totalExp.toFixed(2)} spent`;
+            document.getElementById('summary-expenses').textContent = `SGD $${totalExp.toFixed(2)} spent`;
             
             lucide.createIcons();
         };
@@ -1152,100 +1181,100 @@
             const headerIcon = document.getElementById('category-header-icon');
             const addBtn = document.getElementById('add-item-btn');
             
-            document.getElementById('category-back-text').textContent = `Back to ${trip.destination} Overview`;
-            container.innerHTML = ''; 
+            document.getElementById('category-back-text').textContent = `Back to ${trip.destination}`;
+            let htmlContent = ''; 
 
             if (currentCategory === 'flights') {
                 headerTitle.textContent = 'Flights';
-                headerIcon.className = 'p-3 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400';
-                headerIcon.innerHTML = '<i data-lucide="plane" class="w-6 h-6"></i>';
-                addBtn.className = 'inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:ring-blue-500';
+                headerIcon.className = 'p-4 rounded-2xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400';
+                headerIcon.innerHTML = '<i data-lucide="plane" class="w-8 h-8"></i>';
+                addBtn.className = 'w-full sm:w-auto inline-flex items-center justify-center gap-2 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:ring-blue-500 active:scale-95';
                 addBtn.onclick = () => openFlightModal();
                 addBtn.classList.remove('hidden');
-                document.getElementById('category-header-subtitle').textContent = 'Manage items';
+                document.getElementById('category-header-subtitle').textContent = 'Manage your flight segments';
                 document.getElementById('add-item-text').textContent = 'Add Flight';
 
                 const flights = trip.flights || [];
-                if (flights.length === 0) container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">No flights added yet.</p>';
-                else {
-                    const list = document.createElement('div'); list.className = 'space-y-4';
-                    [...flights].sort((a,b) => new Date(a.departure) - new Date(b.departure)).forEach((f, index) => {
-                        list.innerHTML += `
-                            <div class="flex flex-col md:flex-row md:items-start justify-between p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-500 transition-colors group">
-                                <div class="mb-4 md:mb-0 w-full">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-md uppercase tracking-wider">Flight ${index + 1}</span>
-                                        <h4 class="font-bold text-gray-900 dark:text-white text-lg">${f.airline}</h4>
-                                    </div>
-                                    <div class="flex flex-col sm:flex-row sm:gap-6 mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                        <div class="flex items-center gap-2">
-                                            <i data-lucide="plane-takeoff" class="w-4 h-4 text-blue-500 dark:text-blue-400"></i> 
-                                            ${formatDateTime(f.departure)}
-                                            ${f.depTerminal ? `<span class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded text-xs font-bold ml-1">T${f.depTerminal.replace(/^t/i, '').trim()}</span>` : ''}
-                                        </div>
-                                        <div class="flex items-center gap-2 mt-1 sm:mt-0">
-                                            <i data-lucide="plane-landing" class="w-4 h-4 text-blue-500 dark:text-blue-400"></i> 
-                                            ${formatDateTime(f.arrival)}
-                                            ${f.arrTerminal ? `<span class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded text-xs font-bold ml-1">T${f.arrTerminal.replace(/^t/i, '').trim()}</span>` : ''}
-                                        </div>
-                                    </div>
-                                    ${f.connection ? `
-                                    <div class="mt-4 pt-4 border-t border-dashed border-gray-300 dark:border-gray-600 relative ml-2">
-                                        <div class="absolute -top-3 left-0 bg-gray-50 dark:bg-gray-700/30 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-600"><i data-lucide="link" class="w-3 h-3"></i> Connection</div>
-                                        <div class="flex items-center gap-2 mb-1 mt-1">
-                                            <h4 class="font-bold text-gray-800 dark:text-gray-200 text-md">${f.connection.airline}</h4>
-                                        </div>
-                                        <div class="flex flex-col sm:flex-row sm:gap-6 text-sm text-gray-600 dark:text-gray-400">
-                                            <div class="flex items-center gap-2">
-                                                <i data-lucide="plane-takeoff" class="w-4 h-4 text-indigo-500 dark:text-indigo-400"></i> 
-                                                ${formatDateTime(f.connection.departure)}
-                                                ${f.connection.depTerminal ? `<span class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded text-xs font-bold ml-1">T${f.connection.depTerminal.replace(/^t/i, '').trim()}</span>` : ''}
-                                            </div>
-                                            <div class="flex items-center gap-2 mt-1 sm:mt-0">
-                                                <i data-lucide="plane-landing" class="w-4 h-4 text-indigo-500 dark:text-indigo-400"></i> 
-                                                ${formatDateTime(f.connection.arrival)}
-                                                ${f.connection.arrTerminal ? `<span class="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded text-xs font-bold ml-1">T${f.connection.arrTerminal.replace(/^t/i, '').trim()}</span>` : ''}
-                                            </div>
-                                        </div>
-                                    </div>` : ''}
-                                    ${f.notes ? `<p class="text-gray-600 dark:text-gray-300 text-sm mt-3 bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 whitespace-pre-wrap break-words">${linkify(f.notes)}</p>` : ''}
+                if (flights.length === 0) {
+                    htmlContent = '<div class="bg-white dark:bg-gray-800 p-8 rounded-2xl border border-gray-100 dark:border-gray-700 text-center"><p class="text-gray-500 dark:text-gray-400">No flights added yet.</p></div>';
+                } else {
+                    htmlContent = `<div class="space-y-4">` + [...flights].sort((a,b) => new Date(a.departure) - new Date(b.departure)).map((f, index) => `
+                        <div class="flex flex-col md:flex-row md:items-start justify-between p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 shadow-sm hover:shadow-md transition-all group">
+                            <div class="mb-4 md:mb-0 w-full">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-lg uppercase tracking-wider border border-blue-100 dark:border-blue-800/50">Segment ${index + 1}</span>
+                                    <h4 class="font-bold text-gray-900 dark:text-white text-xl">${f.airline}</h4>
                                 </div>
-                                <div class="flex gap-2 justify-end shrink-0 ml-4">
-                                    <button onclick="openFlightModal('${f.id}')" class="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"><i data-lucide="edit-2" class="w-5 h-5"></i></button>
-                                    <button onclick="triggerDelete('flight', '${f.id}')" class="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                <div class="flex flex-col sm:flex-row sm:gap-8 mt-3 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/30 p-3 rounded-xl inline-block">
+                                    <div class="flex items-center gap-2.5">
+                                        <i data-lucide="plane-takeoff" class="w-5 h-5 text-blue-500 dark:text-blue-400"></i> 
+                                        <span class="font-medium">${formatDateTime(f.departure)}</span>
+                                        ${f.depTerminal ? `<span class="px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md text-xs font-bold ml-1 border border-gray-300 dark:border-gray-600">T${f.depTerminal.replace(/^t/i, '').trim()}</span>` : ''}
+                                    </div>
+                                    <div class="hidden sm:block text-gray-300 dark:text-gray-600"><i data-lucide="arrow-right" class="w-4 h-4"></i></div>
+                                    <div class="flex items-center gap-2.5 mt-2 sm:mt-0">
+                                        <i data-lucide="plane-landing" class="w-5 h-5 text-blue-500 dark:text-blue-400"></i> 
+                                        <span class="font-medium">${formatDateTime(f.arrival)}</span>
+                                        ${f.arrTerminal ? `<span class="px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md text-xs font-bold ml-1 border border-gray-300 dark:border-gray-600">T${f.arrTerminal.replace(/^t/i, '').trim()}</span>` : ''}
+                                    </div>
                                 </div>
-                            </div>`;
-                    });
-                    container.appendChild(list);
+                                ${f.connection ? `
+                                <div class="mt-5 pt-5 border-t border-dashed border-gray-200 dark:border-gray-700 relative ml-4">
+                                    <div class="absolute -top-3.5 left-0 bg-white dark:bg-gray-800 px-3 py-1 text-xs font-bold text-gray-500 dark:text-gray-400 flex items-center gap-1.5 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm"><i data-lucide="link" class="w-3.5 h-3.5"></i> Connection</div>
+                                    <div class="flex items-center gap-2 mb-2 mt-2">
+                                        <h4 class="font-bold text-gray-800 dark:text-gray-200 text-lg">${f.connection.airline}</h4>
+                                    </div>
+                                    <div class="flex flex-col sm:flex-row sm:gap-8 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/30 p-3 rounded-xl inline-block border border-gray-100 dark:border-gray-700/50">
+                                        <div class="flex items-center gap-2.5">
+                                            <i data-lucide="plane-takeoff" class="w-5 h-5 text-indigo-500 dark:text-indigo-400"></i> 
+                                            <span class="font-medium">${formatDateTime(f.connection.departure)}</span>
+                                            ${f.connection.depTerminal ? `<span class="px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md text-xs font-bold ml-1 border border-gray-300 dark:border-gray-600">T${f.connection.depTerminal.replace(/^t/i, '').trim()}</span>` : ''}
+                                        </div>
+                                        <div class="hidden sm:block text-gray-300 dark:text-gray-600"><i data-lucide="arrow-right" class="w-4 h-4"></i></div>
+                                        <div class="flex items-center gap-2.5 mt-2 sm:mt-0">
+                                            <i data-lucide="plane-landing" class="w-5 h-5 text-indigo-500 dark:text-indigo-400"></i> 
+                                            <span class="font-medium">${formatDateTime(f.connection.arrival)}</span>
+                                            ${f.connection.arrTerminal ? `<span class="px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md text-xs font-bold ml-1 border border-gray-300 dark:border-gray-600">T${f.connection.arrTerminal.replace(/^t/i, '').trim()}</span>` : ''}
+                                        </div>
+                                    </div>
+                                </div>` : ''}
+                                ${f.notes ? `<div class="mt-4 bg-yellow-50/50 dark:bg-yellow-900/10 p-3.5 rounded-xl border border-yellow-100 dark:border-yellow-900/30 flex gap-3"><i data-lucide="info" class="w-5 h-5 text-yellow-600 dark:text-yellow-500 shrink-0 mt-0.5"></i><p class="text-gray-700 dark:text-gray-300 text-sm whitespace-pre-wrap break-words leading-relaxed">${linkify(f.notes)}</p></div>` : ''}
+                            </div>
+                            <div class="flex sm:flex-col gap-2 justify-end shrink-0 sm:ml-6 mt-4 sm:mt-0 border-t sm:border-t-0 sm:border-l border-gray-100 dark:border-gray-700 pt-4 sm:pt-0 sm:pl-4">
+                                <button onclick="openFlightModal('${f.id}')" class="p-2.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-colors"><i data-lucide="edit-2" class="w-5 h-5"></i></button>
+                                <button onclick="triggerDelete('flight', '${f.id}')" class="p-2.5 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                            </div>
+                        </div>`).join('') + `</div>`;
                 }
             } 
             else if (currentCategory === 'itinerary') {
                 headerTitle.textContent = 'Itinerary';
-                headerIcon.className = 'p-3 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400';
-                headerIcon.innerHTML = '<i data-lucide="map-pin" class="w-6 h-6"></i>';
+                headerIcon.className = 'p-4 rounded-2xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400';
+                headerIcon.innerHTML = '<i data-lucide="map-pin" class="w-8 h-8"></i>';
                 addBtn.className = 'hidden'; 
-                document.getElementById('category-header-subtitle').textContent = 'Select a day to view activities';
+                document.getElementById('category-header-subtitle').textContent = 'Select a day to view or add activities';
 
                 const dates = getDatesBetween(trip.startDate, trip.endDate);
                 const itinerary = trip.itinerary || [];
                 
                 if (dates.length === 0) {
-                    container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">Please set valid trip start and end dates to view itinerary days.</p>';
+                    htmlContent = '<div class="bg-white dark:bg-gray-800 p-8 rounded-2xl border border-gray-100 dark:border-gray-700 text-center"><p class="text-gray-500 dark:text-gray-400">Please set valid trip start and end dates first.</p></div>';
                 } else {
-                    const grid = document.createElement('div');
-                    grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
+                    htmlContent = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">`;
                     
                     dates.forEach((date, index) => {
                         const dayActivities = itinerary.filter(i => i.time.startsWith(date));
-                        grid.innerHTML += `
-                            <div onclick="viewDay('${date}', ${index + 1})" class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-amber-300 dark:hover:border-amber-500 cursor-pointer transition-all group">
-                                <div class="flex justify-between items-start mb-2">
-                                    <h3 class="font-bold text-lg text-gray-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Day ${index + 1}</h3>
-                                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-amber-500 dark:group-hover:text-amber-400 transform group-hover:translate-x-1 transition-all"></i>
+                        htmlContent += `
+                            <div onclick="viewDay('${date}', ${index + 1})" class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-amber-300 dark:hover:border-amber-600 cursor-pointer transition-all duration-300 group flex flex-col h-full">
+                                <div class="flex justify-between items-start mb-3">
+                                    <h3 class="font-black text-2xl text-gray-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Day ${index + 1}</h3>
+                                    <div class="bg-gray-50 dark:bg-gray-700 p-1.5 rounded-lg group-hover:bg-amber-50 dark:group-hover:bg-amber-900/30 transition-colors">
+                                        <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-amber-500 dark:group-hover:text-amber-400 transform group-hover:translate-x-0.5 transition-all"></i>
+                                    </div>
                                 </div>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">${formatDate(date)}</p>
-                                <div class="inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full text-xs font-medium">
-                                    <i data-lucide="list" class="w-3.5 h-3.5"></i>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-6">${formatDate(date)}</p>
+                                <div class="mt-auto inline-flex items-center w-fit gap-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-3.5 py-1.5 rounded-lg text-sm font-bold border border-amber-100 dark:border-amber-800/30">
+                                    <i data-lucide="list" class="w-4 h-4"></i>
                                     ${dayActivities.length} activities
                                 </div>
                             </div>
@@ -1257,31 +1286,33 @@
                     const unscheduled = itinerary.filter(i => !scheduledIds.has(i.id));
                     
                     if (unscheduled.length > 0) {
-                        grid.innerHTML += `
-                            <div onclick="viewDay('unscheduled', 'Other')" class="bg-gray-50 dark:bg-gray-700/50 p-5 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/50 hover:border-gray-400 dark:hover:border-gray-400 cursor-pointer transition-all group">
-                                <div class="flex justify-between items-start mb-2">
-                                    <h3 class="font-bold text-lg text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Other Dates</h3>
-                                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 transform group-hover:translate-x-1 transition-all"></i>
+                        htmlContent += `
+                            <div onclick="viewDay('unscheduled', 'Other')" class="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-gray-400 dark:hover:border-gray-500 cursor-pointer transition-all duration-300 group flex flex-col h-full">
+                                <div class="flex justify-between items-start mb-3">
+                                    <h3 class="font-black text-2xl text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Other</h3>
+                                    <div class="bg-white dark:bg-gray-700 p-1.5 rounded-lg group-hover:bg-gray-200 dark:group-hover:bg-gray-600 transition-colors shadow-sm">
+                                        <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transform group-hover:translate-x-0.5 transition-all"></i>
+                                    </div>
                                 </div>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Activities outside trip dates</p>
-                                <div class="inline-flex items-center gap-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-full text-xs font-medium">
-                                    <i data-lucide="list" class="w-3.5 h-3.5"></i>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-6">Outside planned dates</p>
+                                <div class="mt-auto inline-flex items-center w-fit gap-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3.5 py-1.5 rounded-lg text-sm font-bold border border-gray-300 dark:border-gray-600">
+                                    <i data-lucide="list" class="w-4 h-4"></i>
                                     ${unscheduled.length} activities
                                 </div>
                             </div>
                         `;
                     }
-                    container.appendChild(grid);
+                    htmlContent += `</div>`;
                 }
             }
             else if (currentCategory === 'expenses') {
                 headerTitle.textContent = 'Expenses';
-                headerIcon.className = 'p-3 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400';
-                headerIcon.innerHTML = '<i data-lucide="dollar-sign" class="w-6 h-6"></i>';
-                addBtn.className = 'inline-flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 focus:ring-emerald-500';
+                headerIcon.className = 'p-4 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400';
+                headerIcon.innerHTML = '<i data-lucide="wallet" class="w-8 h-8"></i>';
+                addBtn.className = 'w-full sm:w-auto inline-flex items-center justify-center gap-2 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 focus:ring-emerald-500 active:scale-95';
                 addBtn.onclick = () => openExpenseModal();
                 addBtn.classList.remove('hidden');
-                document.getElementById('category-header-subtitle').textContent = 'Manage items';
+                document.getElementById('category-header-subtitle').textContent = 'Track your spending in SGD';
                 document.getElementById('add-item-text').textContent = 'Add Expense';
 
                 const nominalRate = getNominalRate(trip);
@@ -1295,53 +1326,59 @@
                     return sum + (parseFloat(e.amount) / validRate);
                 }, 0);
                 
-                container.innerHTML = `
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-xl mb-6 gap-4">
-                        <div>
-                            <span class="text-emerald-800 dark:text-emerald-400 font-medium block mb-1">Trip Nominal Rate</span>
-                            <div class="flex items-center gap-2">
-                                <span class="text-sm text-emerald-600 dark:text-emerald-500 font-medium">SGD$1 =</span>
-                                <input type="number" id="trip-nominal-rate" step="0.000001" min="0.000001" value="${nominalRate}" class="w-24 px-2 py-1 text-sm bg-white dark:bg-gray-800 border border-emerald-200 dark:border-emerald-700 rounded-md focus:ring-emerald-500 dark:text-white outline-none" onchange="updateNominalRate(this.value)">
-                                <span class="text-sm text-emerald-600 dark:text-emerald-500 font-medium">Local</span>
+                htmlContent = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-gray-800 border border-emerald-100 dark:border-emerald-800/50 rounded-2xl mb-8 gap-6 shadow-sm">
+                        <div class="w-full sm:w-auto">
+                            <span class="text-emerald-800 dark:text-emerald-400 font-bold block mb-2 uppercase tracking-wider text-xs">Default Exchange Rate</span>
+                            <div class="flex items-center gap-3 bg-white dark:bg-gray-900/50 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-800 w-fit shadow-sm">
+                                <span class="text-sm font-bold text-gray-700 dark:text-gray-300">SGD $1 =</span>
+                                <input type="number" id="trip-nominal-rate" step="0.000001" min="0.000001" value="${nominalRate}" class="w-28 px-3 py-1.5 text-sm font-bold bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 rounded-lg focus:ring-2 focus:ring-emerald-500 dark:text-white outline-none transition-all" onchange="updateNominalRate(this.value)">
+                                <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Local</span>
                             </div>
                         </div>
-                        <div class="text-left sm:text-right">
-                            <span class="text-emerald-800 dark:text-emerald-400 font-medium block mb-1">Total Trip Expenses</span>
-                            <span class="text-2xl font-bold text-emerald-700 dark:text-emerald-500 block">SGD$${total.toFixed(2)}</span>
-                            <span class="text-sm font-medium text-emerald-600 dark:text-emerald-400/80">${localTotal.toFixed(2)} Local</span>
+                        <div class="text-left sm:text-right w-full sm:w-auto pt-4 sm:pt-0 border-t border-emerald-100 dark:border-emerald-800/50 sm:border-0">
+                            <span class="text-emerald-800 dark:text-emerald-400 font-bold block mb-1 uppercase tracking-wider text-xs">Total Expenses</span>
+                            <span class="text-4xl font-black text-emerald-600 dark:text-emerald-400 block tracking-tight">SGD $${total.toFixed(2)}</span>
+                            <span class="text-sm font-bold text-emerald-600/70 dark:text-emerald-500 mt-1 inline-block bg-emerald-100/50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-md">${localTotal.toFixed(2)} Local</span>
                         </div>
                     </div>
                 `;
 
-                if (actualExpenses.length === 0) container.innerHTML += '<p class="text-gray-500 dark:text-gray-400 text-center py-4">No expenses recorded yet.</p>';
-                else {
-                    const list = document.createElement('div'); list.className = 'space-y-3';
-                    actualExpenses.forEach(e => {
+                if (actualExpenses.length === 0) {
+                    htmlContent += '<div class="bg-white dark:bg-gray-800 p-8 rounded-2xl border border-gray-100 dark:border-gray-700 text-center"><p class="text-gray-500 dark:text-gray-400">No expenses recorded yet.</p></div>';
+                } else {
+                    htmlContent += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">` + actualExpenses.map(e => {
                         const isNominal = e.useNominal !== false;
                         const rate = isNominal ? nominalRate : parseFloat(e.rate || 1);
                         const validRate = rate > 0 ? rate : 1;
                         const sgdAmount = (parseFloat(e.amount) / validRate).toFixed(2);
-                        const rateLabel = isNominal ? 'Nominal' : 'Custom';
-                        const originalAmountHtml = rate !== 1 ? `<div class="text-xs text-gray-500 dark:text-gray-400 text-right mt-0.5" title="${rateLabel} Rate: ${rate}">${parseFloat(e.amount).toFixed(2)} ÷ ${rate}</div>` : '';
-
-                        list.innerHTML += `
-                            <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-500 transition-colors group">
-                                <span class="font-medium text-gray-900 dark:text-white">${e.description}</span>
-                                <div class="flex items-center gap-4">
-                                    <div class="flex flex-col items-end justify-center">
-                                        <span class="font-bold text-gray-900 dark:text-white text-lg">SGD$${sgdAmount}</span>
-                                        ${originalAmountHtml}
+                        const rateLabel = isNominal ? 'Default Rate' : 'Custom Rate';
+                        
+                        return `
+                            <div class="flex flex-col justify-between p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-600 shadow-sm hover:shadow-md transition-all group">
+                                <div class="mb-4">
+                                    <h4 class="font-bold text-gray-900 dark:text-white text-lg leading-tight mb-3">${e.description}</h4>
+                                    <div class="flex items-end gap-2">
+                                        <span class="font-black text-emerald-600 dark:text-emerald-400 text-2xl tracking-tight">$${sgdAmount}</span>
+                                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500 mb-1 uppercase tracking-wider">SGD</span>
                                     </div>
-                                    <div class="flex gap-1">
-                                        <button onclick="openExpenseModal('${e.id}')" class="p-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                                        <button onclick="triggerDelete('expense', '${e.id}')" class="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                </div>
+                                <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-50 dark:border-gray-700/50">
+                                    <div class="flex flex-col">
+                                        <span class="text-sm font-bold text-gray-600 dark:text-gray-300">${parseFloat(e.amount).toFixed(2)} Local</span>
+                                        <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded mt-1 w-fit" title="${rateLabel}">${isNominal ? 'Default Rate' : `Rate: ${rate}`}</span>
+                                    </div>
+                                    <div class="flex gap-1.5">
+                                        <button onclick="openExpenseModal('${e.id}')" class="p-2 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 bg-gray-50 hover:bg-emerald-50 dark:bg-gray-900/30 dark:hover:bg-emerald-900/30 rounded-lg transition-colors"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                        <button onclick="triggerDelete('expense', '${e.id}')" class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 bg-gray-50 hover:bg-red-50 dark:bg-gray-900/30 dark:hover:bg-red-900/30 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                     </div>
                                 </div>
                             </div>`;
-                    });
-                    container.appendChild(list);
+                    }).join('') + `</div>`;
                 }
             }
+            
+            container.innerHTML = htmlContent;
             lucide.createIcons();
         };
 
@@ -1357,8 +1394,6 @@
             document.getElementById('day-header-title').textContent = currentDayDate === 'unscheduled' ? 'Other Dates' : `Day ${currentDayNumber}`;
             document.getElementById('day-header-subtitle').textContent = currentDayDate === 'unscheduled' ? 'Activities outside planned dates' : formatDate(currentDayDate);
             
-            container.innerHTML = '';
-            
             let dayActivities = [];
             const itinerary = trip.itinerary || [];
             if (currentDayDate === 'unscheduled') {
@@ -1371,47 +1406,48 @@
             }
 
             if (dayActivities.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">No activities planned for this day.</p>';
+                container.innerHTML = '<div class="bg-white dark:bg-gray-800 p-8 rounded-2xl border border-gray-100 dark:border-gray-700 text-center"><p class="text-gray-500 dark:text-gray-400">No activities planned for this day.</p></div>';
             } else {
-                const list = document.createElement('div'); list.className = 'pl-2';
-                [...dayActivities].sort((a,b) => new Date(a.time) - new Date(b.time)).forEach(item => {
-                    list.innerHTML += `
-                        <div class="relative pl-10 pb-6 timeline-item group">
-                            <div class="timeline-line"></div>
-                            <div class="absolute left-0 top-1.5 w-[20px] h-[20px] rounded-full bg-amber-100 dark:bg-amber-900 border-4 border-white dark:border-gray-800 shadow-sm z-10 flex items-center justify-center transition-colors">
-                                <div class="w-2.5 h-2.5 bg-amber-500 dark:bg-amber-400 rounded-full"></div>
-                            </div>
-                            <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-700 p-4 hover:border-amber-200 dark:hover:border-amber-500 transition-colors">
-                                <div class="flex justify-between items-start mb-2">
-                                    <div>
-                                        <div class="flex items-center gap-2">
-                                            <h4 class="font-bold text-gray-900 dark:text-white text-lg">${item.activity}</h4>
-                                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.activity)}" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors" title="Search on Google Maps" onclick="event.stopPropagation()">
-                                                <i data-lucide="map-pin" class="w-4 h-4"></i>
-                                            </a>
-                                        </div>
-                                        <div class="text-sm font-medium text-amber-600 dark:text-amber-400 mt-1">${formatDateTime(item.time)}</div>
+                const htmlString = `<div class="pl-2 pt-4">` + [...dayActivities].sort((a,b) => new Date(a.time) - new Date(b.time)).map(item => `
+                    <div class="relative pl-12 pb-8 timeline-item group">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-2 w-[24px] h-[24px] rounded-full bg-amber-100 dark:bg-amber-900/80 border-4 border-gray-50 dark:border-gray-900 shadow-sm z-10 flex items-center justify-center transition-transform group-hover:scale-125">
+                            <div class="w-2.5 h-2.5 bg-amber-500 dark:bg-amber-400 rounded-full"></div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm hover:shadow-md hover:border-amber-300 dark:hover:border-amber-600 transition-all duration-300">
+                            <div class="flex flex-col sm:flex-row justify-between sm:items-start gap-4 mb-2">
+                                <div>
+                                    <div class="flex items-center gap-3">
+                                        <h4 class="font-black text-gray-900 dark:text-white text-xl tracking-tight">${item.activity}</h4>
+                                        <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.activity)}" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 bg-gray-50 hover:bg-blue-50 dark:bg-gray-700 dark:hover:bg-gray-600 p-1.5 rounded-lg transition-colors" title="Search on Google Maps" onclick="event.stopPropagation()">
+                                            <i data-lucide="map-pin" class="w-4 h-4"></i>
+                                        </a>
                                     </div>
-                                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onclick="openItineraryModal('${item.id}')" class="p-1.5 text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 rounded-lg"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                                        <button onclick="triggerDelete('itinerary', '${item.id}')" class="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    <div class="inline-flex items-center gap-1.5 text-sm font-bold text-amber-700 dark:text-amber-400 mt-2 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 rounded-md border border-amber-100 dark:border-amber-800/30">
+                                        <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                                        ${formatDateTime(item.time).split('•')[1].trim()}
                                     </div>
                                 </div>
-                                ${item.notes ? `<p class="text-gray-600 dark:text-gray-300 text-sm mt-3 bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 whitespace-pre-wrap break-words">${linkify(item.notes)}</p>` : ''}
+                                <div class="flex gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity border-t sm:border-0 border-gray-100 dark:border-gray-700 pt-3 sm:pt-0">
+                                    <button onclick="openItineraryModal('${item.id}')" class="p-2 text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 bg-gray-50 hover:bg-amber-50 dark:bg-gray-900/30 dark:hover:bg-amber-900/30 rounded-xl transition-colors"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                    <button onclick="triggerDelete('itinerary', '${item.id}')" class="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 bg-gray-50 hover:bg-red-50 dark:bg-gray-900/30 dark:hover:bg-red-900/30 rounded-xl transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                </div>
                             </div>
-                        </div>`;
-                });
-                container.appendChild(list);
+                            ${item.notes ? `<div class="mt-4 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700/50"><p class="text-gray-600 dark:text-gray-300 text-sm whitespace-pre-wrap break-words leading-relaxed">${linkify(item.notes)}</p></div>` : ''}
+                        </div>
+                    </div>`).join('') + `</div>`;
+                
+                container.innerHTML = htmlString;
             }
             lucide.createIcons();
         };
 
-
-        // --- Category Modals Logic ---
+        // Modal and Save Functions remain logically identical, referencing the refactored renders.
+        // ... (The rest of the logic functions are kept identical to preserve backend sync integrity) ...
         const openFlightModal = (id = null) => {
             const form = document.getElementById('flight-form'); form.reset();
             const trip = trips.find(t => t.id === currentTripId);
-            document.getElementById('flight-arrival-date').min = ''; // Reset validation
+            document.getElementById('flight-arrival-date').min = ''; 
 
             if (id) {
                 document.getElementById('flight-modal-title').textContent = 'Edit Flight';
@@ -1507,15 +1543,11 @@
             }
 
             const trip = trips.find(t => t.id === currentTripId); 
-
-            // Trip Boundary Validation
-            const tripStart = new Date(trip.startDate);
-            tripStart.setHours(0, 0, 0, 0);
-            const tripEnd = new Date(trip.endDate);
-            tripEnd.setHours(23, 59, 59, 999);
+            const tripStart = new Date(trip.startDate); tripStart.setHours(0, 0, 0, 0);
+            const tripEnd = new Date(trip.endDate); tripEnd.setHours(23, 59, 59, 999);
 
             if (new Date(dep) < tripStart || new Date(finalArrival) > tripEnd) {
-                showToast(`All flights must be within trip dates (${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}).`, true);
+                showToast(`All flights must be within trip dates.`, true);
                 return;
             }
 
@@ -1531,7 +1563,6 @@
                 connection: connData
             };
             
-            // Create a temporary array to validate sequence overlaps before saving
             let updatedFlights = trip.flights ? [...trip.flights] : [];
             if (id) {
                 updatedFlights = updatedFlights.map(f => f.id === id ? data : f);
@@ -1539,25 +1570,21 @@
                 updatedFlights.push(data);
             }
             
-            // Sort chronologically by departure
             updatedFlights.sort((a,b) => new Date(a.departure) - new Date(b.departure));
             
-            // Sequence Validation: Ensure no flight departs before the previous one arrives
             for (let i = 1; i < updatedFlights.length; i++) {
                 const prevFlight = updatedFlights[i-1];
                 const prevFinalArrival = prevFlight.connection ? prevFlight.connection.arrival : prevFlight.arrival;
                 if (new Date(updatedFlights[i].departure) < new Date(prevFinalArrival)) {
                     const prevAirlineStr = prevFlight.connection ? prevFlight.connection.airline : prevFlight.airline;
                     showToast(`Conflict: '${updatedFlights[i].airline}' departs before '${prevAirlineStr}' arrives!`, true);
-                    return; // Block save entirely
+                    return; 
                 }
             }
 
             showLoader("Saving flight...");
-            trip.flights = updatedFlights; // Safe to save the correctly sequenced array
-            
+            trip.flights = updatedFlights; 
             await syncTripToDatabase(trip);
-            
             hideLoader();
             closeModal('flight-modal'); renderCategoryDetails();
         };
@@ -1566,7 +1593,6 @@
             const form = document.getElementById('itinerary-form'); form.reset();
             const trip = trips.find(t => t.id === currentTripId);
             
-            // Constrain date picker to trip window
             const itinDateInput = document.getElementById('itinerary-date');
             const tStart = trip.startDate.split('T')[0];
             const tEnd = trip.endDate.split('T')[0];
@@ -1582,7 +1608,6 @@
                 const timeParts = i.time ? i.time.split('T') : ['',''];
                 document.getElementById('itinerary-date').value = timeParts[0];
                 document.getElementById('itinerary-time').value = timeParts[1] || '';
-                
                 document.getElementById('itinerary-notes').value = i.notes || '';
             } else { 
                 document.getElementById('itinerary-modal-title').textContent = 'Add Activity'; 
@@ -1604,7 +1629,6 @@
             showLoader("Saving activity...");
             const trip = trips.find(t => t.id === currentTripId); 
             const id = document.getElementById('itinerary-id').value;
-            
             const timeVal = document.getElementById('itinerary-date').value + 'T' + document.getElementById('itinerary-time').value;
             
             const data = { 
@@ -1618,7 +1642,6 @@
             id ? trip.itinerary = trip.itinerary.map(i => i.id === id ? data : i) : trip.itinerary.push(data);
             
             await syncTripToDatabase(trip);
-
             hideLoader();
             closeModal('itinerary-modal'); 
             currentDayDate ? renderDayDetails() : renderCategoryDetails();
@@ -1637,7 +1660,6 @@
             showLoader("Updating nominal rate...");
             await syncTripToDatabase(trip);
             hideLoader();
-            
             renderCategoryDetails(); 
         };
 
@@ -1646,7 +1668,7 @@
             const rate = parseFloat(document.getElementById('expense-rate').value) || 0;
             const validRate = rate > 0 ? rate : 1; 
             const sgd = amount / validRate;
-            document.getElementById('expense-sgd-calc').textContent = `SGD$ ${sgd.toFixed(2)}`;
+            document.getElementById('expense-sgd-calc').textContent = `SGD $${sgd.toFixed(2)}`;
         };
 
         const toggleNominalRate = () => {
@@ -1657,10 +1679,10 @@
                 const trip = trips.find(t => t.id === currentTripId);
                 rateInput.value = getNominalRate(trip);
                 rateInput.disabled = true;
-                rateInput.classList.add('bg-gray-100', 'text-gray-500', 'dark:bg-gray-600', 'dark:text-gray-400', 'cursor-not-allowed');
+                rateInput.classList.add('bg-gray-100', 'text-gray-500', 'dark:bg-gray-700', 'dark:text-gray-400', 'cursor-not-allowed', 'opacity-70');
             } else {
                 rateInput.disabled = false;
-                rateInput.classList.remove('bg-gray-100', 'text-gray-500', 'dark:bg-gray-600', 'dark:text-gray-400', 'cursor-not-allowed');
+                rateInput.classList.remove('bg-gray-100', 'text-gray-500', 'dark:bg-gray-700', 'dark:text-gray-400', 'cursor-not-allowed', 'opacity-70');
             }
             calculateSGD();
         };
@@ -1715,7 +1737,6 @@
             }
             
             await syncTripToDatabase(trip);
-
             hideLoader();
             closeModal('expense-modal'); renderCategoryDetails();
         };
